@@ -48,8 +48,11 @@ fn main() {
         Arc::clone(&state_machine),
     );
 
+    // ── 7. Spawn tray thread (shows icon and handles exit) ────────────────────
+    let _tray_handle = platform::windows::tray::spawn_tray_thread();
+
     eprintln!("[main] running — double-tap CapsLock to enter mouse mode");
 
-    // ── 6. Block until hook thread exits (i.e., forever) ─────────────────────
+    // ── 8. Block until hook thread exits (i.e., forever) ─────────────────────
     let _ = hook_handle.join();
 }

@@ -1,6 +1,6 @@
 [package]
 name = "mozkeys"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
 description = "Low-latency keyboard-driven mouse control utility for Windows"
 
@@ -12,6 +12,9 @@ path = "src/main.rs"
 serde = { version = "1", features = ["derive"] }
 toml = "0.8"
 
+[build-dependencies]
+embed-resource = "2.5"
+
 [dependencies.windows]
 version = "0.58"
 features = [
@@ -20,6 +23,7 @@ features = [
     "Win32_Graphics_Gdi",
     "Win32_UI_Input_KeyboardAndMouse",
     "Win32_UI_WindowsAndMessaging",
+    "Win32_UI_Shell",
     "Win32_System_LibraryLoader",
     "Win32_System_Threading",
     "Win32_System_Performance",

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>mozkeys — wield the mouse from your keyboard</title>
+  <title>mozkeys - wield the mouse from your keyboard</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -416,7 +416,7 @@
     <li><a href="#bindings">Bindings</a></li>
     <li><a href="#config">Config</a></li>
     <li><a href="#download">Download</a></li>
-    <li><a href="https://github.com/your-org/mozkeys" target="_blank" rel="noopener">GitHub</a></li>
+    <li><a href="https://github.com/rayanfer32/mozkeys" target="_blank" rel="noopener">GitHub</a></li>
   </ul>
 </nav>
 
@@ -427,11 +427,11 @@
     <h1>Wield the mouse<br>from your keyboard.</h1>
     <p class="hero-sub">
       mozkeys is a lightweight background utility that turns your keyboard into a full
-      mouse replacement — with smooth acceleration, instant clicks, and zero configuration
+      mouse replacement , with smooth acceleration, instant clicks, and zero configuration
       required to get started.
     </p>
     <div class="hero-actions">
-      <a class="btn btn-primary" href="https://github.com/your-org/mozkeys/releases/latest" target="_blank" rel="noopener">
+      <a class="btn btn-primary" href="https://github.com/rayanfer32/mozkeys/releases/latest" target="_blank" rel="noopener">
         ↓ Download for Windows
       </a>
       <a class="btn btn-outline" href="#how">How it works</a>
@@ -481,7 +481,7 @@
       <div class="feature-card">
         <span class="feature-icon">⚡</span>
         <h3>Smooth acceleration</h3>
-        <p>Starts slow for precision, ramps up fast when you hold a direction. Movement is computed at 240 Hz — not driven by OS key-repeat.</p>
+        <p>Starts slow for precision, ramps up fast when you hold a direction. Movement is computed at 240 Hz , not driven by OS key-repeat.</p>
       </div>
       <div class="feature-card">
         <span class="feature-icon">🎯</span>
@@ -522,10 +522,10 @@
       <div class="diff-col">
         <h3>mozkeys</h3>
         <ul>
-          <li data-icon="✓">Double-tap CapsLock — a key already on every keyboard that you almost never use for caps.</li>
-          <li data-icon="✓">Right Shift / Right Ctrl for clicks — left-hand modifiers remain fully functional.</li>
-          <li data-icon="✓">240 Hz deterministic loop — movement is independent of OS key-repeat rate or focus.</li>
-          <li data-icon="✓">Sub-pixel accumulation — smooth at all speeds, no pixel-skipping jitter.</li>
+          <li data-icon="✓">Double-tap CapsLock , a key already on every keyboard that you almost never use for caps.</li>
+          <li data-icon="✓">Right Shift / Right Ctrl for clicks , left-hand modifiers remain fully functional.</li>
+          <li data-icon="✓">240 Hz deterministic loop , movement is independent of OS key-repeat rate or focus.</li>
+          <li data-icon="✓">Sub-pixel accumulation , smooth at all speeds, no pixel-skipping jitter.</li>
           <li data-icon="✓">612 KB, no install, no dependencies.</li>
         </ul>
       </div>
@@ -533,10 +533,10 @@
         <h3>Typical alternatives</h3>
         <ul>
           <li data-icon="✗">Dedicated toggle key that conflicts with normal typing.</li>
-          <li data-icon="✗">Steal both Shift and Ctrl — breaks shortcuts while in mouse mode.</li>
-          <li data-icon="✗">Movement tied to OS key-repeat — laggy, non-deterministic.</li>
+          <li data-icon="✗">Steal both Shift and Ctrl , breaks shortcuts while in mouse mode.</li>
+          <li data-icon="✗">Movement tied to OS key-repeat , laggy, non-deterministic.</li>
           <li data-icon="✗">Large installer, .NET runtime, or Electron shell required.</li>
-          <li data-icon="✗">No acceleration tuning — either too slow or too fast.</li>
+          <li data-icon="✗">No acceleration tuning , either too slow or too fast.</li>
         </ul>
       </div>
     </div>
@@ -620,7 +620,7 @@
         <div class="step-num">1</div>
         <div>
           <h3>Global hook thread</h3>
-          <p>A dedicated thread installs a <code>WH_KEYBOARD_LL</code> hook via Win32 and runs a <code>GetMessageW</code> loop. Every keydown/keyup writes a single atomic timestamp — no allocations, no locks, returns in under 1 µs.</p>
+          <p>A dedicated thread installs a <code>WH_KEYBOARD_LL</code> hook via Win32 and runs a <code>GetMessageW</code> loop. Every keydown/keyup writes a single atomic timestamp , no allocations, no locks, returns in under 1 µs.</p>
         </div>
       </div>
       <div class="how-step">
@@ -634,7 +634,7 @@
         <div class="step-num">3</div>
         <div>
           <h3>Sub-pixel accumulator</h3>
-          <p>Fractional pixel deltas accumulate across ticks rather than being truncated, giving perfectly smooth movement at all speeds including slow precision mode — no visible stepping.</p>
+          <p>Fractional pixel deltas accumulate across ticks rather than being truncated, giving perfectly smooth movement at all speeds including slow precision mode , no visible stepping.</p>
         </div>
       </div>
       <div class="how-step">
@@ -672,8 +672,8 @@
 <span class="tok-key">tick_rate</span>    = <span class="tok-num">240</span>    <span class="tok-comment"># movement loop Hz</span>
 
 <span class="tok-section">[clicks]</span>
-<span class="tok-key">left</span>   = <span class="tok-val">"rshift"</span>   <span class="tok-comment"># Right Shift only — Left Shift still works normally</span>
-<span class="tok-key">right</span>  = <span class="tok-val">"rctrl"</span>    <span class="tok-comment"># Right Ctrl only  — Left Ctrl still works normally</span>
+<span class="tok-key">left</span>   = <span class="tok-val">"rshift"</span>   <span class="tok-comment"># Right Shift only , Left Shift still works normally</span>
+<span class="tok-key">right</span>  = <span class="tok-val">"rctrl"</span>    <span class="tok-comment"># Right Ctrl only  , Left Ctrl still works normally</span>
 <span class="tok-key">middle</span> = <span class="tok-val">"alt"</span>
 
 <span class="tok-section">[precision]</span>
@@ -694,10 +694,10 @@
     <h2>Get started in 30 seconds.</h2>
     <p>Download the executable, drop it anywhere, and run it. No installer. No admin rights required for normal use. No dependencies.</p>
     <div class="dl-actions">
-      <a class="btn btn-primary" href="https://github.com/your-org/mozkeys/releases/latest" target="_blank" rel="noopener">
+      <a class="btn btn-primary" href="https://github.com/rayanfer32/mozkeys/releases/latest" target="_blank" rel="noopener">
         ↓ mozkeys.exe (Windows x64)
       </a>
-      <a class="btn btn-outline" href="https://github.com/your-org/mozkeys" target="_blank" rel="noopener">
+      <a class="btn btn-outline" href="https://github.com/rayanfer32/mozkeys" target="_blank" rel="noopener">
         View source on GitHub
       </a>
     </div>
@@ -714,22 +714,22 @@
 
       <details>
         <summary>Does it work in every application?</summary>
-        <p>Yes. mozkeys uses a low-level Windows keyboard hook (<code>WH_KEYBOARD_LL</code>) and <code>SendInput</code> for mouse events, both of which operate globally and work in any application — including games, terminals, browsers, and design tools. The only exception is applications running at higher privilege (e.g. Task Manager open as Administrator), where Windows itself blocks input injection for security.</p>
+        <p>Yes. mozkeys uses a low-level Windows keyboard hook (<code>WH_KEYBOARD_LL</code>) and <code>SendInput</code> for mouse events, both of which operate globally and work in any application , including games, terminals, browsers, and design tools. The only exception is applications running at higher privilege (e.g. Task Manager open as Administrator), where Windows itself blocks input injection for security.</p>
       </details>
 
       <details>
         <summary>Why CapsLock? Won't that interfere with typing?</summary>
-        <p>CapsLock is one of the few keys that is almost never used intentionally yet occupies prime keyboard real estate. mozkeys intercepts CapsLock entirely in mouse mode and suppresses the caps-toggle side-effect. Outside of mouse mode, CapsLock still works as normal. The double-tap entry gesture is fast and natural — two quick taps to enter, one tap of Escape to exit.</p>
+        <p>CapsLock is one of the few keys that is almost never used intentionally yet occupies prime keyboard real estate. mozkeys intercepts CapsLock entirely in mouse mode and suppresses the caps-toggle side-effect. Outside of mouse mode, CapsLock still works as normal. The double-tap entry gesture is fast and natural , two quick taps to enter, one tap of Escape to exit.</p>
       </details>
 
       <details>
         <summary>Why Right Shift and Right Ctrl for clicks instead of both Shifts?</summary>
-        <p>Taking both Shift keys would break common shortcuts like Shift+Click (range select), Shift+Arrow (text selection), and Shift+Enter inside applications. By binding only the <em>right-hand</em> variants, your left-hand Shift and Ctrl remain fully functional at all times — even while mouse mode is active. This lets you hold Left Shift and click with Right Shift to do a shift-click, for example.</p>
+        <p>Taking both Shift keys would break common shortcuts like Shift+Click (range select), Shift+Arrow (text selection), and Shift+Enter inside applications. By binding only the <em>right-hand</em> variants, your left-hand Shift and Ctrl remain fully functional at all times , even while mouse mode is active. This lets you hold Left Shift and click with Right Shift to do a shift-click, for example.</p>
       </details>
 
       <details>
         <summary>How is the movement so smooth? I expected stuttering.</summary>
-        <p>Most keyboard-to-mouse tools tie cursor movement to the OS key-repeat rate, which is designed for text input (typically 30–50 events/s with a noticeable initial delay). mozkeys runs its own independent 240 Hz loop using <code>QueryPerformanceCounter</code> — no OS key-repeat involved. Sub-pixel fractional deltas are accumulated across ticks and dispatched as whole pixels only when they exceed 1 px, eliminating stepping at low speeds.</p>
+        <p>Most keyboard-to-mouse tools tie cursor movement to the OS key-repeat rate, which is designed for text input (typically 30–50 events/s with a noticeable initial delay). mozkeys runs its own independent 240 Hz loop using <code>QueryPerformanceCounter</code> , no OS key-repeat involved. Sub-pixel fractional deltas are accumulated across ticks and dispatched as whole pixels only when they exceed 1 px, eliminating stepping at low speeds.</p>
       </details>
 
       <details>
@@ -753,7 +753,7 @@
 
 <!-- ── footer ── -->
 <footer>
-  <p>mozkeys — <a href="https://github.com/your-org/mozkeys" target="_blank" rel="noopener">GitHub</a> &nbsp;·&nbsp; MIT License</p>
+  <p>mozkeys , <a href="https://github.com/rayanfer32/mozkeys" target="_blank" rel="noopener">GitHub</a> &nbsp;·&nbsp; MIT License</p>
   <p>Built with Rust &nbsp;·&nbsp; Windows x64</p>
 </footer>
 

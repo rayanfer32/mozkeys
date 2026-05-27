@@ -1,7 +1,7 @@
 # mozkeys
 
 A lightweight, low-latency keyboard-driven mouse control utility for Windows.
-Control your cursor entirely from the keyboard — no mouse required.
+Control your cursor entirely from the keyboard, no mouse required.
 
 ## Features
 
@@ -10,7 +10,7 @@ Control your cursor entirely from the keyboard — no mouse required.
 - Left, right, and middle click simulation
 - Vertical and horizontal scrolling
 - Precision (slow) mode for fine positioning
-- 240 Hz deterministic movement loop — no OS key-repeat jitter
+- 240 Hz deterministic movement loop, no OS key-repeat jitter
 - < 5 ms input processing latency
 - ~612 KB binary, negligible CPU/RAM usage
 - Fully configurable via a TOML file
@@ -116,8 +116,8 @@ src/
 ```
 
 **Threading model:**
-- **Hook thread** — installs `WH_KEYBOARD_LL`, runs `GetMessageW`. Callback does only atomic writes; no allocations, no locks, returns in < 1 µs.
-- **Movement thread** — 240 Hz loop driven by `QueryPerformanceCounter`. Reads key states atomically, computes cursor delta, dispatches `SendInput`.
+- **Hook thread**: installs `WH_KEYBOARD_LL`, runs `GetMessageW`. Callback does only atomic writes; no allocations, no locks, returns in < 1 µs.
+- **Movement thread**: 240 Hz loop driven by `QueryPerformanceCounter`. Reads key states atomically, computes cursor delta, dispatches `SendInput`.
 
 ## Acceleration
 
@@ -140,5 +140,5 @@ where `t` is seconds the movement key has been held. This gives instant response
 ## Requirements
 
 - Windows 10 or later (x86-64)
-- No installation required — single executable
+- No installation required (single executable)
 - No elevated privileges required for normal use

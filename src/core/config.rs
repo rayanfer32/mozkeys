@@ -223,22 +223,23 @@ acceleration = 1.4    # ramp factor (higher = faster ramp)
 tick_rate    = 240   # movement loop Hz
 
 [clicks]
-left   = "shift"
-right  = "ctrl"
-middle = "alt"
+left   = "rctrl"
+right  = "rshift"
+middle = "/"
 
-[precision]
+[precision]             
 modifier   = "capslock"  # hold this key for slow precise movement
 multiplier = 0.3         # speed multiplier in precision mode
 
 [scroll]
 up    = "pageup"
 down  = "pagedown"
-left  = "home"
+left  = "home"  
 right = "end"
-speed = 3
+speed = 3   
 "#;
-    std::fs::write(path, default_toml)?;
+    std::fs::write(path, default_toml)  ?;
     eprintln!("[config] wrote default config to {}", path.display());
-    Ok(())
-}
+    Ok(())  
+}   
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      

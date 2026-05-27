@@ -2,17 +2,18 @@
 
 /// mozkeys — keyboard-driven mouse control for Windows.
 ///
-/// Entry point:
+/// Entry point:    
 ///   1. Initialise QPC timer.
-///   2. Load config.
-///   3. Build shared state (KeyStateTable, StateMachine).
+///   2. Load conf  ig.
+///   3. Build shared state (KeyStateTable,  StateMachine).
 ///   4. Spawn movement loop thread.
 ///   5. Spawn hook thread (installs WH_KEYBOARD_LL and pumps messages).
-///   6. Join threads (runs forever; Ctrl+C or tray exit to quit).
+///   6. Spawn tray thread (polls for tray exit).
+///   7. Join threads (runs until tray exit).
 
 mod core;
 mod platform;
-mod runtime;
+mod runtime;    
 
 use std::sync::Arc;
 

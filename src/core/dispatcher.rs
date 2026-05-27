@@ -135,25 +135,28 @@ impl Dispatcher {
             self.accum_y = 0.0;
         }
 
-        // ── clicks (fire once per press, reset on release) ────────────────────
+        // ── clicks (hold to drag, release to let go) ──────────────────────────
         if click_l && !self.click_left_fired {
-            send_input::click(MouseButton::Left);
+            send_input::press(MouseButton::Left);
             self.click_left_fired = true;
-        } else if !click_l {
+        } else if !click_l && self.click_left_fired {
+            send_input::release(MouseButton::Left);
             self.click_left_fired = false;
         }
 
         if click_r && !self.click_right_fired {
-            send_input::click(MouseButton::Right);
+            send_input::press(MouseButton::Right);
             self.click_right_fired = true;
-        } else if !click_r {
+        } else if !click_r && self.click_right_fired {
+            send_input::release(MouseButton::Right);
             self.click_right_fired = false;
         }
 
         if click_m && !self.click_middle_fired {
-            send_input::click(MouseButton::Middle);
+            send_input::press(MouseButton::Middle);
             self.click_middle_fired = true;
-        } else if !click_m {
+        } else if !click_m && self.click_middle_fired {
+            send_input::release(MouseButton::Middle);
             self.click_middle_fired = false;
         }
 
@@ -188,9 +191,18 @@ impl Dispatcher {
     }
 
     fn reset_click_state(&mut self) {
-        self.click_left_fired   = false;
-        self.click_right_fired  = false;
-        self.click_middle_fired = false;
+        if self.click_left_fired {
+            send_input::release(MouseButton::Left);
+            self.click_left_fired = false;
+        }
+        if self.click_right_fired {
+            send_input::release(MouseButton::Right);
+            self.click_right_fired = false;
+        }
+        if self.click_middle_fired {
+            send_input::release(MouseButton::Middle);
+            self.click_middle_fired = false;
+        }
         self.scroll_up_fired   = false;
         self.scroll_down_fired = false;
         self.scroll_left_fired = false;

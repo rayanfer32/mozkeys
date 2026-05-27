@@ -22,18 +22,27 @@ pub fn move_cursor(dx: i32, dy: i32) {
     send(&[input]);
 }
 
-/// Simulate a mouse button click (down + up in one SendInput call for atomicity).
-pub fn click(button: MouseButton) {
-    let (down_flag, up_flag) = match button {
-        MouseButton::Left   => (MOUSEEVENTF_LEFTDOWN,   MOUSEEVENTF_LEFTUP),
-        MouseButton::Right  => (MOUSEEVENTF_RIGHTDOWN,  MOUSEEVENTF_RIGHTUP),
-        MouseButton::Middle => (MOUSEEVENTF_MIDDLEDOWN, MOUSEEVENTF_MIDDLEUP),
+
+/// Simulate pressing a mouse button (down only).
+pub fn press(button: MouseButton) {
+    let flag = match button {
+        MouseButton::Left   => MOUSEEVENTF_LEFTDOWN,
+        MouseButton::Right  => MOUSEEVENTF_RIGHTDOWN,
+        MouseButton::Middle => MOUSEEVENTF_MIDDLEDOWN,
     };
-    let inputs = [
-        build_mouse_input(down_flag, 0, 0, 0),
-        build_mouse_input(up_flag,   0, 0, 0),
-    ];
-    send(&inputs);
+    let input = build_mouse_input(flag, 0, 0, 0);
+    send(&[input]);
+}
+
+/// Simulate releasing a mouse button (up only).
+pub fn release(button: MouseButton) {
+    let flag = match button {
+        MouseButton::Left   => MOUSEEVENTF_LEFTUP,
+        MouseButton::Right  => MOUSEEVENTF_RIGHTUP,
+        MouseButton::Middle => MOUSEEVENTF_MIDDLEUP,
+    };
+    let input = build_mouse_input(flag, 0, 0, 0);
+    send(&[input]);
 }
 
 /// Scroll vertically. `delta` > 0 scrolls up, < 0 scrolls down.

@@ -15,7 +15,6 @@ pub struct Dispatcher {
     key_states:    Arc<KeyStateTable>,
     state_machine: Arc<StateMachine>,
     accel:         AccelParams,
-    tick_rate:     u32,
     scroll_speed:  i32,
 
     // Sub-pixel accumulator for smooth movement at low speeds.
@@ -47,7 +46,6 @@ impl Dispatcher {
                 acceleration:  cfg.movement.acceleration,
                 precision_mul: cfg.precision.multiplier,
             },
-            tick_rate:    cfg.movement.tick_rate,
             scroll_speed: cfg.scroll.speed,
             accum_x: 0.0,
             accum_y: 0.0,
@@ -109,7 +107,7 @@ impl Dispatcher {
             let max_held = [held_up, held_down, held_left, held_right]
                 .into_iter().max().unwrap_or(0);
 
-            let speed = self.accel.speed(max_held, self.tick_rate, precision);
+            let speed = self.accel.speed(max_held, precision);
 
             let dx_dir = (right_held as i32 - left_held as i32) as f32;
             let dy_dir = (down_held  as i32 - up_held   as i32) as f32;

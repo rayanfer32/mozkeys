@@ -45,15 +45,40 @@ impl KeyStateTable {
     }
 
     /// Returns true if the key is currently held down.
+    ///
+    /// For generic modifier VKs (VK_SHIFT=0x10, VK_CONTROL=0x11, VK_MENU=0x12)
+    /// Windows sends the left/right-specific variant (e.g. VK_LSHIFT=0xA0).
+    /// We check both so callers can use either the generic or specific form.
     #[inline(always)]
     pub fn is_down(&self, vk: u16) -> bool {
+        if self.raw_down(vk) { return true; }
+        // Generic modifier → also check left/right variants.
+        // VK codes are fixed Win32 constants that have not changed since Win95.
+        match vk {
+            0x10 => self.raw_down(0xA0) || self.raw_down(0xA1), // SHIFT   → LSHIFT|RSHIFT
+            0x11 => self.raw_down(0xA2) || self.raw_down(0xA3), // CONTROL → LCTRL|RCTRL
+            0x12 => self.raw_down(0xA4) || self.raw_down(0xA5), // MENU    → LALT|RALT
+            _    => false,
+        }
+    }
+
+    #[inline(always)]
+    fn raw_down(&self, vk: u16) -> bool {
         self.down[vk as usize & 0xFF].load(Ordering::Acquire) != 0
     }
 
     /// Returns the timestamp (µs) at which the key was pressed, or 0 if up.
+    /// Checks left/right variants for generic modifier VKs (same as `is_down`).
     #[inline(always)]
     pub fn down_since(&self, vk: u16) -> u64 {
-        self.down[vk as usize & 0xFF].load(Ordering::Acquire)
+        let ts = self.down[vk as usize & 0xFF].load(Ordering::Acquire);
+        if ts != 0 { return ts; }
+        match vk {
+            0x10 => self.down[0xA0].load(Ordering::Acquire).max(self.down[0xA1].load(Ordering::Acquire)),
+            0x11 => self.down[0xA2].load(Ordering::Acquire).max(self.down[0xA3].load(Ordering::Acquire)),
+            0x12 => self.down[0xA4].load(Ordering::Acquire).max(self.down[0xA5].load(Ordering::Acquire)),
+            _    => 0,
+        }
     }
 
     /// How long (µs) the key has been held, given `now_us`.

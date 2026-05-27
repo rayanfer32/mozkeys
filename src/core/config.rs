@@ -102,8 +102,8 @@ impl Default for MovementConfig {
             down:         "down".into(),
             left:         "left".into(),
             right:        "right".into(),
-            base_speed:   4.0,
-            max_speed:    28.0,
+            base_speed:   5.0,   // px/tick at 240 Hz ≈ 1200 px/s
+            max_speed:    20.0,  // px/tick at 240 Hz ≈ 4800 px/s
             acceleration: 1.4,
             tick_rate:    240,
         }
@@ -217,9 +217,9 @@ down  = "down"
 left  = "left"
 right = "right"
 
-base_speed   = 4.0   # pixels/tick at start of hold
-max_speed    = 28.0  # pixels/tick after full acceleration
-acceleration = 1.4   # ramp factor (higher = faster ramp)
+base_speed   = 5.0    # pixels/tick (5 px × 240 Hz ≈ 1200 px/s at start)
+max_speed    = 20.0   # pixels/tick (20 px × 240 Hz ≈ 4800 px/s at max)
+acceleration = 1.4    # ramp factor (higher = faster ramp)
 tick_rate    = 240   # movement loop Hz
 
 [clicks]

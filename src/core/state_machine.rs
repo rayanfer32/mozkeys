@@ -166,19 +166,35 @@ impl StateMachine {
     }
 
     /// True if `vk` is a key that should be suppressed while in mouse mode.
+    ///
+    /// Normalises left/right modifier variants to their generic form before
+    /// comparing so that e.g. VK_LSHIFT (0xA0) is recognised as VK_SHIFT (0x10).
     fn is_mouse_mode_key(&self, vk: u16) -> bool {
-        vk == self.vk_up
-            || vk == self.vk_down
-            || vk == self.vk_left
-            || vk == self.vk_right
-            || vk == self.vk_click_left
+        let vk = Self::generic_vk(vk);
+        vk == self.vk_click_left
             || vk == self.vk_click_right
             || vk == self.vk_click_middle
             || vk == self.vk_precision
+            || vk == self.vk_up
+            || vk == self.vk_down
+            || vk == self.vk_left
+            || vk == self.vk_right
             || vk == self.vk_scroll_up
             || vk == self.vk_scroll_down
             || vk == self.vk_scroll_left
             || vk == self.vk_scroll_right
             || vk == self.exit_vk
+    }
+
+    /// Maps left/right-specific modifier VK codes to their generic equivalents
+    /// so config keys like "shift" (VK_SHIFT=0x10) match physical VK_LSHIFT (0xA0).
+    #[inline]
+    fn generic_vk(vk: u16) -> u16 {
+        match vk {
+            0xA0 | 0xA1 => 0x10, // LSHIFT|RSHIFT → SHIFT
+            0xA2 | 0xA3 => 0x11, // LCTRL|RCTRL   → CONTROL
+            0xA4 | 0xA5 => 0x12, // LALT|RALT      → MENU
+            other        => other,
+        }
     }
 }

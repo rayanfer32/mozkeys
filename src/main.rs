@@ -42,6 +42,11 @@ fn main() {
         Arc::clone(&state_machine),
     );
 
+    // ── 6. Spawn emoji overlay (colored dot follows cursor in mouse mode) ─────
+    let _overlay_handle = platform::windows::overlay::spawn_overlay_thread(
+        Arc::clone(&state_machine),
+    );
+
     eprintln!("[main] running — double-tap CapsLock to enter mouse mode");
 
     // ── 6. Block until hook thread exits (i.e., forever) ─────────────────────

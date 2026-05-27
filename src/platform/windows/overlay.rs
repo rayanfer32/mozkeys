@@ -26,7 +26,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
     UpdateLayeredWindow, CS_HREDRAW, CS_VREDRAW, CW_USEDEFAULT, MSG, SW_HIDE,
     SW_SHOWNOACTIVATE, ULW_ALPHA, WNDCLASSEXW, WM_DESTROY, WM_TIMER,
     WS_EX_LAYERED, WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_EX_TRANSPARENT,
-    WS_POPUP,
+    WS_POPUP, HWND_TOPMOST, SetWindowPos, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE,
 };
 
 use crate::core::state_machine::StateMachine;
@@ -214,6 +214,17 @@ unsafe extern "system" fn wnd_proc(
                     let _ = ShowWindow(hwnd, SW_SHOWNOACTIVATE);
                     ctx.visible = true;
                 }
+
+                // Force the window to stay topmost, even when switching focus/windows.
+                let _ = SetWindowPos(
+                    hwnd,
+                    HWND_TOPMOST,
+                    0,
+                    0,
+                    0,
+                    0,
+                    SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE,
+                );
             } else if ctx.visible {
                 // Mouse mode turned off — hide the overlay.
                 let _ = ShowWindow(hwnd, SW_HIDE);

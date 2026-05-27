@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mozkeys — wield the mouse from your keyboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink:      #111111;
+      --ink-2:    #444444;
+      --ink-3:    #777777;
+      --surface:  #ffffff;
+      --surface-2:#f5f5f3;
+      --surface-3:#eeecea;
+      --accent:   #1a1a1a;
+      --accent-2: #333333;
+      --border:   #e0dedd;
+      --radius:   10px;
+      --mono:     'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: var(--surface);
+      color: var(--ink);
+      line-height: 1.65;
+      font-size: 16px;
+    }
+
+    /* ── nav ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2rem;
+      height: 56px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.88);
+      backdrop-filter: blur(10px);
+    }
+    .nav-logo {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      text-decoration: none;
+    }
+    .nav-links { display: flex; gap: 1.6rem; list-style: none; }
+    .nav-links a {
+      font-size: 0.88rem;
+      color: var(--ink-2);
+      text-decoration: none;
+      transition: color .15s;
+    }
+    .nav-links a:hover { color: var(--ink); }
+
+    /* ── layout ── */
+    section { padding: 5rem 2rem; }
+    .container { max-width: 860px; margin: 0 auto; }
+    .section-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+      margin-bottom: 1rem;
+    }
+    h2 {
+      font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      margin-bottom: 1.1rem;
+    }
+    p { color: var(--ink-2); margin-bottom: 1rem; }
+
+    /* ── hero ── */
+    #hero {
+      padding: 7rem 2rem 6rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+      margin-bottom: 1.4rem;
+    }
+    .hero-eyebrow span {
+      display: inline-block;
+      width: 20px; height: 1px;
+      background: var(--ink-3);
+    }
+    h1 {
+      font-size: clamp(2.4rem, 6vw, 4rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1.08;
+      margin-bottom: 1.4rem;
+    }
+    .hero-sub {
+      font-size: 1.15rem;
+      color: var(--ink-2);
+      max-width: 520px;
+      margin-bottom: 2.2rem;
+      line-height: 1.7;
+    }
+    .hero-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
+
+    /* ── buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.65rem 1.4rem;
+      border-radius: var(--radius);
+      font-size: 0.92rem;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background .15s, color .15s, box-shadow .15s;
+      border: 1.5px solid transparent;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-primary:hover { background: var(--accent-2); box-shadow: 0 4px 12px rgba(0,0,0,.15); }
+    .btn-outline {
+      background: transparent;
+      color: var(--ink);
+      border-color: var(--border);
+    }
+    .btn-outline:hover { background: var(--surface-2); }
+
+    /* ── hero badge row ── */
+    .hero-badges {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      margin-top: 3rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border);
+    }
+    .badge {
+      display: flex;
+      flex-direction: column;
+    }
+    .badge-val {
+      font-size: 1.3rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+    }
+    .badge-label {
+      font-size: 0.78rem;
+      color: var(--ink-3);
+    }
+
+    /* ── features grid ── */
+    #features { background: var(--surface-2); }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1.5rem;
+      margin-top: 2.5rem;
+    }
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.4rem;
+    }
+    .feature-icon {
+      font-size: 1.5rem;
+      margin-bottom: 0.75rem;
+      display: block;
+    }
+    .feature-card h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+      letter-spacing: -0.01em;
+    }
+    .feature-card p {
+      font-size: 0.85rem;
+      color: var(--ink-3);
+      margin: 0;
+      line-height: 1.55;
+    }
+
+    /* ── different section ── */
+    #different { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .diff-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+    @media (max-width: 600px) { .diff-grid { grid-template-columns: 1fr; } }
+    .diff-col h3 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+      margin-bottom: 1rem;
+    }
+    .diff-col ul { list-style: none; display: flex; flex-direction: column; gap: 0.55rem; }
+    .diff-col ul li {
+      font-size: 0.9rem;
+      display: flex;
+      gap: 0.6rem;
+      align-items: flex-start;
+      color: var(--ink-2);
+    }
+    .diff-col ul li::before { content: attr(data-icon); flex-shrink: 0; }
+
+    /* ── bindings ── */
+    #bindings { background: var(--surface-2); }
+    .bindings-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 2rem;
+      font-size: 0.9rem;
+    }
+    .bindings-table th {
+      text-align: left;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .bindings-table td {
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--ink-2);
+    }
+    .bindings-table tr:last-child td { border-bottom: none; }
+    .bindings-table tbody tr:hover td { background: var(--surface-3); }
+    kbd {
+      display: inline-block;
+      padding: 0.2em 0.55em;
+      font-family: var(--mono);
+      font-size: 0.82em;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-bottom-width: 2px;
+      border-radius: 5px;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    .bindings-note {
+      font-size: 0.82rem;
+      color: var(--ink-3);
+      margin-top: 1rem;
+    }
+
+    /* ── how it works ── */
+    #how {
+      border-top: 1px solid var(--border);
+    }
+    .how-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 1.4rem;
+      margin-top: 2rem;
+    }
+    .how-step {
+      display: flex;
+      gap: 1.2rem;
+      align-items: flex-start;
+    }
+    .step-num {
+      flex-shrink: 0;
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: var(--surface-3);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--ink-3);
+    }
+    .how-step h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 0.2rem;
+    }
+    .how-step p {
+      font-size: 0.88rem;
+      color: var(--ink-3);
+      margin: 0;
+    }
+
+    /* ── config ── */
+    #config { background: var(--surface-2); border-top: 1px solid var(--border); }
+    pre {
+      background: #1c1c1e;
+      color: #d4d4d4;
+      border-radius: var(--radius);
+      padding: 1.4rem 1.6rem;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      line-height: 1.7;
+      overflow-x: auto;
+      margin-top: 1.6rem;
+      border: 1px solid #333;
+    }
+    .tok-comment { color: #6a9955; }
+    .tok-key     { color: #9cdcfe; }
+    .tok-val     { color: #ce9178; }
+    .tok-num     { color: #b5cea8; }
+    .tok-section { color: #dcdcaa; font-weight: 600; }
+
+    /* ── download ── */
+    #download {
+      border-top: 1px solid var(--border);
+      text-align: center;
+    }
+    #download .container { max-width: 560px; }
+    #download h2 { margin-bottom: 0.6rem; }
+    #download p  { margin-bottom: 2rem; }
+    .dl-actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+    .platform-note {
+      font-size: 0.8rem;
+      color: var(--ink-3);
+    }
+
+    /* ── faq ── */
+    #faq { border-top: 1px solid var(--border); }
+    .faq-list { margin-top: 2rem; display: flex; flex-direction: column; gap: 0; }
+    details {
+      border-bottom: 1px solid var(--border);
+      padding: 0;
+    }
+    details:first-child { border-top: 1px solid var(--border); }
+    summary {
+      cursor: pointer;
+      padding: 1.1rem 0;
+      font-weight: 600;
+      font-size: 0.95rem;
+      list-style: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      user-select: none;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary::after {
+      content: '+';
+      font-size: 1.1rem;
+      color: var(--ink-3);
+      flex-shrink: 0;
+      transition: transform .2s;
+    }
+    details[open] summary::after { content: '−'; }
+    details p {
+      font-size: 0.9rem;
+      padding: 0 0 1.2rem;
+      margin: 0;
+      color: var(--ink-2);
+    }
+
+    /* ── footer ── */
+    footer {
+      padding: 2rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    footer p { font-size: 0.82rem; color: var(--ink-3); margin: 0; }
+    footer a { color: var(--ink-3); text-decoration: none; }
+    footer a:hover { color: var(--ink); }
+
+    @media (max-width: 600px) {
+      nav { padding: 0 1.2rem; }
+      .nav-links { gap: 1rem; }
+      section { padding: 3.5rem 1.2rem; }
+      #hero { padding: 4rem 1.2rem 3rem; }
+      footer { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── nav ── -->
+<nav>
+  <a class="nav-logo" href="#hero">mozkeys</a>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#bindings">Bindings</a></li>
+    <li><a href="#config">Config</a></li>
+    <li><a href="#download">Download</a></li>
+    <li><a href="https://github.com/your-org/mozkeys" target="_blank" rel="noopener">GitHub</a></li>
+  </ul>
+</nav>
+
+<!-- ── hero ── -->
+<section id="hero">
+  <div class="container">
+    <div class="hero-eyebrow"><span></span> Windows utility</div>
+    <h1>Wield the mouse<br>from your keyboard.</h1>
+    <p class="hero-sub">
+      mozkeys is a lightweight background utility that turns your keyboard into a full
+      mouse replacement — with smooth acceleration, instant clicks, and zero configuration
+      required to get started.
+    </p>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="https://github.com/your-org/mozkeys/releases/latest" target="_blank" rel="noopener">
+        ↓ Download for Windows
+      </a>
+      <a class="btn btn-outline" href="#how">How it works</a>
+    </div>
+
+    <div class="hero-badges">
+      <div class="badge">
+        <span class="badge-val">612 KB</span>
+        <span class="badge-label">binary size</span>
+      </div>
+      <div class="badge">
+        <span class="badge-val">&lt;5 ms</span>
+        <span class="badge-label">input latency</span>
+      </div>
+      <div class="badge">
+        <span class="badge-val">240 Hz</span>
+        <span class="badge-label">movement loop</span>
+      </div>
+      <div class="badge">
+        <span class="badge-val">&lt;0.2%</span>
+        <span class="badge-label">idle CPU</span>
+      </div>
+      <div class="badge">
+        <span class="badge-val">~5 MB</span>
+        <span class="badge-label">RAM usage</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── features ── -->
+<section id="features">
+  <div class="container">
+    <div class="section-label">Features</div>
+    <h2>Everything you need.<br>Nothing you don't.</h2>
+    <div class="features-grid">
+      <div class="feature-card">
+        <span class="feature-icon">⌨️</span>
+        <h3>Double-tap CapsLock</h3>
+        <p>Enter and exit mouse mode with a quick double-tap of CapsLock. Clever reuse of a key you barely use anyway.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🖱️</span>
+        <h3>Right-hand clicks</h3>
+        <p>Right Shift = left click. Right Ctrl = right click. Left Shift and Ctrl keep working normally in every app.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">⚡</span>
+        <h3>Smooth acceleration</h3>
+        <p>Starts slow for precision, ramps up fast when you hold a direction. Movement is computed at 240 Hz — not driven by OS key-repeat.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🎯</span>
+        <h3>Precision mode</h3>
+        <p>Hold CapsLock while in mouse mode to instantly slow the cursor to 30% speed for pixel-perfect positioning.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">📜</span>
+        <h3>Scrolling</h3>
+        <p>Page Up / Down scrolls vertically. Home / End scrolls horizontally. Works in every application.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🔧</span>
+        <h3>Fully configurable</h3>
+        <p>A plain TOML file controls every key binding, speed, and trigger. No GUI required. Sensible defaults out of the box.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">👻</span>
+        <h3>Invisible by design</h3>
+        <p>No tray icon, no window, no installer. Runs silently as a background process. Start it with Windows and forget it's there.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🦀</span>
+        <h3>Built in Rust</h3>
+        <p>Native Win32 APIs only. No Electron, no runtime, no garbage collector. Single 612 KB executable.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── different ── -->
+<section id="different">
+  <div class="container">
+    <div class="section-label">Why mozkeys</div>
+    <h2>Different by design.</h2>
+    <p>Tools like NeatMouse overlay a separate mode-toggle key or require holding a dedicated hotkey. mozkeys is smarter about it.</p>
+    <div class="diff-grid">
+      <div class="diff-col">
+        <h3>mozkeys</h3>
+        <ul>
+          <li data-icon="✓">Double-tap CapsLock — a key already on every keyboard that you almost never use for caps.</li>
+          <li data-icon="✓">Right Shift / Right Ctrl for clicks — left-hand modifiers remain fully functional.</li>
+          <li data-icon="✓">240 Hz deterministic loop — movement is independent of OS key-repeat rate or focus.</li>
+          <li data-icon="✓">Sub-pixel accumulation — smooth at all speeds, no pixel-skipping jitter.</li>
+          <li data-icon="✓">612 KB, no install, no dependencies.</li>
+        </ul>
+      </div>
+      <div class="diff-col">
+        <h3>Typical alternatives</h3>
+        <ul>
+          <li data-icon="✗">Dedicated toggle key that conflicts with normal typing.</li>
+          <li data-icon="✗">Steal both Shift and Ctrl — breaks shortcuts while in mouse mode.</li>
+          <li data-icon="✗">Movement tied to OS key-repeat — laggy, non-deterministic.</li>
+          <li data-icon="✗">Large installer, .NET runtime, or Electron shell required.</li>
+          <li data-icon="✗">No acceleration tuning — either too slow or too fast.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── bindings ── -->
+<section id="bindings">
+  <div class="container">
+    <div class="section-label">Key bindings</div>
+    <h2>Default bindings.</h2>
+    <p>All bindings are configurable via the TOML config file. These are the defaults.</p>
+    <table class="bindings-table">
+      <thead>
+        <tr>
+          <th>Key</th>
+          <th>Action</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><kbd>CapsLock</kbd> × 2</td>
+          <td>Enter / exit mouse mode</td>
+          <td>Both taps within 250 ms</td>
+        </tr>
+        <tr>
+          <td><kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd></td>
+          <td>Move cursor</td>
+          <td>Accelerates on hold</td>
+        </tr>
+        <tr>
+          <td>Hold <kbd>CapsLock</kbd></td>
+          <td>Precision mode</td>
+          <td>Reduces speed to 30%</td>
+        </tr>
+        <tr>
+          <td><kbd>Right Shift</kbd></td>
+          <td>Left click</td>
+          <td>Left Shift unaffected</td>
+        </tr>
+        <tr>
+          <td><kbd>Right Ctrl</kbd></td>
+          <td>Right click</td>
+          <td>Left Ctrl unaffected</td>
+        </tr>
+        <tr>
+          <td><kbd>Alt</kbd></td>
+          <td>Middle click</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td><kbd>Page Up</kbd> / <kbd>Page Down</kbd></td>
+          <td>Scroll up / down</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td><kbd>Home</kbd> / <kbd>End</kbd></td>
+          <td>Scroll left / right</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td><kbd>Escape</kbd></td>
+          <td>Exit mouse mode</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="bindings-note">All keys are only active while mouse mode is on. Your keyboard behaves completely normally at all other times.</p>
+  </div>
+</section>
+
+<!-- ── how it works ── -->
+<section id="how">
+  <div class="container">
+    <div class="section-label">How it works</div>
+    <h2>Fast by architecture,<br>not by accident.</h2>
+    <p>mozkeys is designed around the constraint that every millisecond matters in an input utility.</p>
+    <div class="how-steps">
+      <div class="how-step">
+        <div class="step-num">1</div>
+        <div>
+          <h3>Global hook thread</h3>
+          <p>A dedicated thread installs a <code>WH_KEYBOARD_LL</code> hook via Win32 and runs a <code>GetMessageW</code> loop. Every keydown/keyup writes a single atomic timestamp — no allocations, no locks, returns in under 1 µs.</p>
+        </div>
+      </div>
+      <div class="how-step">
+        <div class="step-num">2</div>
+        <div>
+          <h3>240 Hz movement loop</h3>
+          <p>A second thread wakes at precisely 240 Hz using <code>QueryPerformanceCounter</code>. It reads the atomic key states, computes the cursor delta using the acceleration curve, and dispatches <code>SendInput</code>. No OS key-repeat involved.</p>
+        </div>
+      </div>
+      <div class="how-step">
+        <div class="step-num">3</div>
+        <div>
+          <h3>Sub-pixel accumulator</h3>
+          <p>Fractional pixel deltas accumulate across ticks rather than being truncated, giving perfectly smooth movement at all speeds including slow precision mode — no visible stepping.</p>
+        </div>
+      </div>
+      <div class="how-step">
+        <div class="step-num">4</div>
+        <div>
+          <h3>Power-curve acceleration</h3>
+          <p>Speed follows <em>v = base + accel × t<sup>1.5</sup></em>. Starts at your configured base speed instantly, ramps smoothly, then plateaus at max speed. No dead zone. No sudden jumps.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── config ── -->
+<section id="config">
+  <div class="container">
+    <div class="section-label">Configuration</div>
+    <h2>A config file you'll actually read.</h2>
+    <p>
+      On first run mozkeys writes a default config to
+      <code>%APPDATA%\mozkeys\config.toml</code>.
+      Edit it in Notepad, save, and restart the app. Every setting is commented.
+    </p>
+    <pre><span class="tok-comment"># mozkeys configuration</span>
+
+<span class="tok-section">[general]</span>
+<span class="tok-key">mouse_mode</span>    = <span class="tok-val">"capslock_doubletap"</span>   <span class="tok-comment"># capslock_doubletap | capslock_hold | right_alt</span>
+<span class="tok-key">double_tap_ms</span> = <span class="tok-num">250</span>                    <span class="tok-comment"># max gap between taps (ms)</span>
+<span class="tok-key">exit_key</span>      = <span class="tok-val">"escape"</span>
+
+<span class="tok-section">[movement]</span>
+<span class="tok-key">base_speed</span>   = <span class="tok-num">5.0</span>    <span class="tok-comment"># pixels/tick at start  (≈1200 px/s at 240 Hz)</span>
+<span class="tok-key">max_speed</span>    = <span class="tok-num">20.0</span>   <span class="tok-comment"># pixels/tick at max    (≈4800 px/s at 240 Hz)</span>
+<span class="tok-key">acceleration</span> = <span class="tok-num">1.4</span>    <span class="tok-comment"># ramp factor</span>
+<span class="tok-key">tick_rate</span>    = <span class="tok-num">240</span>    <span class="tok-comment"># movement loop Hz</span>
+
+<span class="tok-section">[clicks]</span>
+<span class="tok-key">left</span>   = <span class="tok-val">"rshift"</span>   <span class="tok-comment"># Right Shift only — Left Shift still works normally</span>
+<span class="tok-key">right</span>  = <span class="tok-val">"rctrl"</span>    <span class="tok-comment"># Right Ctrl only  — Left Ctrl still works normally</span>
+<span class="tok-key">middle</span> = <span class="tok-val">"alt"</span>
+
+<span class="tok-section">[precision]</span>
+<span class="tok-key">modifier</span>   = <span class="tok-val">"capslock"</span>   <span class="tok-comment"># hold while in mouse mode for slow movement</span>
+<span class="tok-key">multiplier</span> = <span class="tok-num">0.3</span>
+
+<span class="tok-section">[scroll]</span>
+<span class="tok-key">up</span>    = <span class="tok-val">"pageup"</span>
+<span class="tok-key">down</span>  = <span class="tok-val">"pagedown"</span>
+<span class="tok-key">speed</span> = <span class="tok-num">3</span></pre>
+  </div>
+</section>
+
+<!-- ── download ── -->
+<section id="download">
+  <div class="container">
+    <div class="section-label">Download</div>
+    <h2>Get started in 30 seconds.</h2>
+    <p>Download the executable, drop it anywhere, and run it. No installer. No admin rights required for normal use. No dependencies.</p>
+    <div class="dl-actions">
+      <a class="btn btn-primary" href="https://github.com/your-org/mozkeys/releases/latest" target="_blank" rel="noopener">
+        ↓ mozkeys.exe (Windows x64)
+      </a>
+      <a class="btn btn-outline" href="https://github.com/your-org/mozkeys" target="_blank" rel="noopener">
+        View source on GitHub
+      </a>
+    </div>
+    <p class="platform-note">Windows 10 / 11 x64 &nbsp;·&nbsp; No installation &nbsp;·&nbsp; 612 KB &nbsp;·&nbsp; Built with Rust</p>
+  </div>
+</section>
+
+<!-- ── faq ── -->
+<section id="faq">
+  <div class="container">
+    <div class="section-label">FAQ</div>
+    <h2>Common questions.</h2>
+    <div class="faq-list">
+
+      <details>
+        <summary>Does it work in every application?</summary>
+        <p>Yes. mozkeys uses a low-level Windows keyboard hook (<code>WH_KEYBOARD_LL</code>) and <code>SendInput</code> for mouse events, both of which operate globally and work in any application — including games, terminals, browsers, and design tools. The only exception is applications running at higher privilege (e.g. Task Manager open as Administrator), where Windows itself blocks input injection for security.</p>
+      </details>
+
+      <details>
+        <summary>Why CapsLock? Won't that interfere with typing?</summary>
+        <p>CapsLock is one of the few keys that is almost never used intentionally yet occupies prime keyboard real estate. mozkeys intercepts CapsLock entirely in mouse mode and suppresses the caps-toggle side-effect. Outside of mouse mode, CapsLock still works as normal. The double-tap entry gesture is fast and natural — two quick taps to enter, one tap of Escape to exit.</p>
+      </details>
+
+      <details>
+        <summary>Why Right Shift and Right Ctrl for clicks instead of both Shifts?</summary>
+        <p>Taking both Shift keys would break common shortcuts like Shift+Click (range select), Shift+Arrow (text selection), and Shift+Enter inside applications. By binding only the <em>right-hand</em> variants, your left-hand Shift and Ctrl remain fully functional at all times — even while mouse mode is active. This lets you hold Left Shift and click with Right Shift to do a shift-click, for example.</p>
+      </details>
+
+      <details>
+        <summary>How is the movement so smooth? I expected stuttering.</summary>
+        <p>Most keyboard-to-mouse tools tie cursor movement to the OS key-repeat rate, which is designed for text input (typically 30–50 events/s with a noticeable initial delay). mozkeys runs its own independent 240 Hz loop using <code>QueryPerformanceCounter</code> — no OS key-repeat involved. Sub-pixel fractional deltas are accumulated across ticks and dispatched as whole pixels only when they exceed 1 px, eliminating stepping at low speeds.</p>
+      </details>
+
+      <details>
+        <summary>Does it run at startup?</summary>
+        <p>Not automatically. To run at startup, create a shortcut to <code>mozkeys.exe</code> in your Windows Startup folder (<kbd>Win</kbd>+<kbd>R</kbd>, type <code>shell:startup</code>). A dedicated startup flag may be added in a future release.</p>
+      </details>
+
+      <details>
+        <summary>Can I change the trigger key from CapsLock to something else?</summary>
+        <p>Yes. The config supports three trigger modes: <code>capslock_doubletap</code> (default), <code>capslock_hold</code>, and <code>right_alt</code>. Support for arbitrary custom combos is planned for a future release.</p>
+      </details>
+
+      <details>
+        <summary>Will it ever support Linux or macOS?</summary>
+        <p>The architecture was designed with portability in mind. Platform-specific code is isolated under <code>platform/windows/</code>. Linux (via <code>evdev</code> / <code>uinput</code>) and macOS (via <code>CGEventTap</code>) support is on the roadmap, but Windows is the current focus.</p>
+      </details>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── footer ── -->
+<footer>
+  <p>mozkeys — <a href="https://github.com/your-org/mozkeys" target="_blank" rel="noopener">GitHub</a> &nbsp;·&nbsp; MIT License</p>
+  <p>Built with Rust &nbsp;·&nbsp; Windows x64</p>
+</footer>
+
+</body>
+</html>

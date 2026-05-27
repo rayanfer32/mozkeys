@@ -167,14 +167,16 @@ impl StateMachine {
 
     /// True if `vk` is a key that should be suppressed while in mouse mode.
     ///
-    /// Normalises left/right modifier variants to their generic form before
-    /// comparing so that e.g. VK_LSHIFT (0xA0) is recognised as VK_SHIFT (0x10).
+    /// Uses `vk_matches` so that:
+    ///   - a generic configured key (e.g. "shift" = VK_SHIFT 0x10) suppresses
+    ///     both VK_LSHIFT and VK_RSHIFT.
+    ///   - a specific configured key (e.g. "rshift" = VK_RSHIFT 0xA1) suppresses
+    ///     only VK_RSHIFT; VK_LSHIFT passes through normally.
     fn is_mouse_mode_key(&self, vk: u16) -> bool {
-        let vk = Self::generic_vk(vk);
-        vk == self.vk_click_left
-            || vk == self.vk_click_right
-            || vk == self.vk_click_middle
-            || vk == self.vk_precision
+        Self::vk_matches(vk, self.vk_click_left)
+            || Self::vk_matches(vk, self.vk_click_right)
+            || Self::vk_matches(vk, self.vk_click_middle)
+            || Self::vk_matches(vk, self.vk_precision)
             || vk == self.vk_up
             || vk == self.vk_down
             || vk == self.vk_left
@@ -186,15 +188,21 @@ impl StateMachine {
             || vk == self.exit_vk
     }
 
-    /// Maps left/right-specific modifier VK codes to their generic equivalents
-    /// so config keys like "shift" (VK_SHIFT=0x10) match physical VK_LSHIFT (0xA0).
+    /// Returns true if incoming `vk` corresponds to configured `target`.
+    ///
+    /// When `target` is a *generic* modifier (VK_SHIFT/CONTROL/MENU), expands
+    /// to both left and right variants — e.g. "shift" matches LSHIFT and RSHIFT.
+    ///
+    /// When `target` is already *specific* (VK_LSHIFT, VK_RSHIFT, etc.), requires
+    /// an exact match — e.g. "rshift" only matches VK_RSHIFT, not VK_LSHIFT.
     #[inline]
-    fn generic_vk(vk: u16) -> u16 {
-        match vk {
-            0xA0 | 0xA1 => 0x10, // LSHIFT|RSHIFT → SHIFT
-            0xA2 | 0xA3 => 0x11, // LCTRL|RCTRL   → CONTROL
-            0xA4 | 0xA5 => 0x12, // LALT|RALT      → MENU
-            other        => other,
+    fn vk_matches(vk: u16, target: u16) -> bool {
+        if vk == target { return true; }
+        match target {
+            0x10 => matches!(vk, 0xA0 | 0xA1), // VK_SHIFT    → LSHIFT or RSHIFT
+            0x11 => matches!(vk, 0xA2 | 0xA3), // VK_CONTROL  → LCTRL  or RCTRL
+            0x12 => matches!(vk, 0xA4 | 0xA5), // VK_MENU     → LALT   or RALT
+            _    => false,
         }
     }
 }

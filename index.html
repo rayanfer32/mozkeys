@@ -397,6 +397,251 @@
     footer a { color: var(--ink-3); text-decoration: none; }
     footer a:hover { color: var(--ink); }
 
+    /* ── hero layout ── */
+    .hero-container {
+      max-width: 1040px;
+    }
+    .hero-layout {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 3.5rem;
+      align-items: center;
+    }
+    @media (max-width: 900px) {
+      .hero-layout {
+        grid-template-columns: 1fr;
+        gap: 3rem;
+        text-align: center;
+      }
+      .hero-sub {
+        margin-left: auto;
+        margin-right: auto;
+      }
+      .hero-actions {
+        justify-content: center;
+      }
+    }
+
+    /* ── demo widget ── */
+    .demo-widget {
+      background: rgba(245, 245, 243, 0.6);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+      backdrop-filter: blur(8px);
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+      text-align: left;
+    }
+    .demo-screen {
+      position: relative;
+      height: 180px;
+      background: #111111;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid #222;
+    }
+    .demo-grid-bg {
+      position: absolute;
+      inset: 0;
+      background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+    .demo-status {
+      position: absolute;
+      top: 10px;
+      left: 12px;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: #888;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      background: #ff3b30;
+      border-radius: 50%;
+      transition: background 0.3s, box-shadow 0.3s;
+    }
+    .status-dot.active {
+      background: #4cd964;
+      box-shadow: 0 0 8px #4cd964;
+    }
+    .demo-cursor {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-4px, -2px);
+      transition: top 0.6s cubic-bezier(0.25, 1, 0.5, 1),
+                  left 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+      pointer-events: none;
+      z-index: 10;
+    }
+    .demo-overlay {
+      position: absolute;
+      top: 18px;
+      left: 14px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: rgba(80, 200, 40, 0.65);
+      border: 1.5px solid rgba(20, 100, 10, 0.95);
+      transform: translate(-50%, -50%) scale(0);
+      opacity: 0;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s;
+    }
+    .demo-overlay.active {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+    }
+    .demo-ripple {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid #50C828;
+      transform: translate(-50%, -50%) scale(0);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 5;
+    }
+    .demo-ripple.animate-left {
+      animation: ripple-out-left 0.4s ease-out;
+    }
+    .demo-ripple.animate-right {
+      border-color: #34d399;
+      animation: ripple-out-right 0.4s ease-out;
+    }
+    @keyframes ripple-out-left {
+      0% { transform: translate(-50%, -50%) scale(0); opacity: 0.8; }
+      100% { transform: translate(-50%, -50%) scale(1.8); opacity: 0; }
+    }
+    @keyframes ripple-out-right {
+      0% { transform: translate(-50%, -50%) scale(0); opacity: 0.8; }
+      100% { transform: translate(-50%, -50%) scale(1.8); opacity: 0; }
+    }
+    .demo-menu {
+      position: absolute;
+      width: 90px;
+      background: #2c2c2e;
+      border: 1px solid #444;
+      border-radius: 6px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      display: flex;
+      flex-direction: column;
+      padding: 4px;
+      z-index: 15;
+      opacity: 0;
+      transform: scale(0.9);
+      transform-origin: top left;
+      transition: opacity 0.2s, transform 0.2s;
+      pointer-events: none;
+    }
+    .demo-menu.active {
+      opacity: 1;
+      transform: scale(1);
+    }
+    .menu-item {
+      color: #e5e5ea;
+      font-size: 0.72rem;
+      padding: 4px 8px;
+      border-radius: 3px;
+    }
+    .menu-item:hover {
+      background: #0a84ff;
+    }
+    .demo-keyboard {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .kbd-col {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .kbd-col:nth-child(1) { flex: 1; }
+    .kbd-col:nth-child(2) { flex: 1.2; align-items: center; }
+    .kbd-col:nth-child(3) { flex: 1.2; }
+
+    .kbd-label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--ink-3);
+      letter-spacing: 0.05em;
+      margin-bottom: 2px;
+    }
+    .kbd-key {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-bottom: 2.5px solid var(--border);
+      border-radius: 6px;
+      padding: 0.55rem 0.4rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-align: center;
+      color: var(--ink-2);
+      transition: all 0.1s ease;
+      user-select: none;
+    }
+    .kbd-key.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+      border-bottom-width: 1px;
+      transform: translateY(1.5px);
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .capslock {
+      width: 100%;
+      margin-top: 10px;
+    }
+    .arrow-container {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .arrow-container .kbd-row {
+      display: flex;
+      gap: 3px;
+      justify-content: center;
+    }
+    .arrow {
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+    }
+    .kbd-key-empty {
+      width: 32px;
+      height: 32px;
+    }
+    .click-key {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1px;
+      padding: 0.4rem 0.3rem;
+    }
+    .action-hint {
+      font-size: 0.6rem;
+      font-weight: 500;
+      color: var(--ink-3);
+    }
+    .kbd-key.active .action-hint {
+      color: rgba(255, 255, 255, 0.7);
+    }
+
     @media (max-width: 600px) {
       nav { padding: 0 1.2rem; }
       .nav-links { gap: 1rem; }
@@ -422,19 +667,85 @@
 
 <!-- ── hero ── -->
 <section id="hero">
-  <div class="container">
-    <div class="hero-eyebrow"><span></span> Windows utility</div>
-    <h1>Wield the mouse<br>from your keyboard.</h1>
-    <p class="hero-sub">
-      mozkeys is a lightweight background utility that turns your keyboard into a full
-      mouse replacement , with smooth acceleration, instant clicks, and zero configuration
-      required to get started.
-    </p>
-    <div class="hero-actions">
-      <a class="btn btn-primary" href="https://github.com/rayanfer32/mozkeys/releases/latest" target="_blank" rel="noopener">
-        ↓ Download for Windows
-      </a>
-      <a class="btn btn-outline" href="#how">How it works</a>
+  <div class="container hero-container">
+    <div class="hero-layout">
+      <!-- Left: Hero Text -->
+      <div class="hero-text">
+        <div class="hero-eyebrow"><span></span> Windows utility</div>
+        <h1>Wield the mouse<br>from your keyboard.</h1>
+        <p class="hero-sub">
+          mozkeys is a lightweight background utility that turns your keyboard into a full
+          mouse replacement , with smooth acceleration, instant clicks, and zero configuration
+          required to get started.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="https://github.com/rayanfer32/mozkeys/releases/latest" target="_blank" rel="noopener">
+            ↓ Download for Windows
+          </a>
+          <a class="btn btn-outline" href="#how">How it works</a>
+        </div>
+      </div>
+
+      <!-- Right: Animation Widget -->
+      <div class="hero-visual">
+        <div class="demo-widget">
+          <!-- Screen Area -->
+          <div class="demo-screen">
+            <div class="demo-grid-bg"></div>
+            <div id="demo-cursor" class="demo-cursor">
+              <svg class="cursor-arrow" viewBox="0 0 24 24" width="20" height="20">
+                <path fill="#ffffff" stroke="#111111" stroke-width="1.5" d="M4.5,3v15.2l4.3-4.3l3.2,7.5l2.6-1.1l-3.2-7.5l5.3-0.5L4.5,3z"/>
+              </svg>
+              <div id="demo-overlay" class="demo-overlay"></div>
+            </div>
+            <div id="demo-ripple" class="demo-ripple"></div>
+            <div id="demo-menu" class="demo-menu">
+              <div class="menu-item">Copy</div>
+              <div class="menu-item">Paste</div>
+            </div>
+            <div id="demo-status" class="demo-status"><span class="status-dot"></span> Mouse Mode: OFF</div>
+          </div>
+
+          <!-- Keyboard Area -->
+          <div class="demo-keyboard">
+            <!-- Trigger Key (Left) -->
+            <div class="kbd-col">
+              <div class="kbd-label">Trigger</div>
+              <div id="key-capslock" class="kbd-key capslock">CapsLock</div>
+            </div>
+            
+            <!-- Movement Keys (Center) -->
+            <div class="kbd-col">
+              <div class="kbd-label">Move</div>
+              <div class="arrow-container">
+                <div class="kbd-row">
+                  <div class="kbd-key-empty"></div>
+                  <div id="key-up" class="kbd-key arrow">↑</div>
+                  <div class="kbd-key-empty"></div>
+                </div>
+                <div class="kbd-row">
+                  <div id="key-left" class="kbd-key arrow">←</div>
+                  <div id="key-down" class="kbd-key arrow">↓</div>
+                  <div id="key-right" class="kbd-key arrow">→</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Click Keys (Right) -->
+            <div class="kbd-col">
+              <div class="kbd-label">Click</div>
+              <div id="key-rshift" class="kbd-key click-key">
+                <span>RShift</span>
+                <span class="action-hint">Left Click</span>
+              </div>
+              <div id="key-rctrl" class="kbd-key click-key">
+                <span>RCtrl</span>
+                <span class="action-hint">Right Click</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="hero-badges">
@@ -757,5 +1068,142 @@
   <p>Built with Rust &nbsp;·&nbsp; Windows x64</p>
 </footer>
 
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const capslock = document.getElementById("key-capslock");
+  const keyUp = document.getElementById("key-up");
+  const keyLeft = document.getElementById("key-left");
+  const keyDown = document.getElementById("key-down");
+  const keyRight = document.getElementById("key-right");
+  const keyRshift = document.getElementById("key-rshift");
+  const keyRctrl = document.getElementById("key-rctrl");
+
+  const cursor = document.getElementById("demo-cursor");
+  const overlay = document.getElementById("demo-overlay");
+  const ripple = document.getElementById("demo-ripple");
+  const menu = document.getElementById("demo-menu");
+  const status = document.getElementById("demo-status");
+
+  let cursorX = 50; 
+  let cursorY = 50;
+
+  function setCursorPos(xPercent, yPercent) {
+    cursor.style.left = `${xPercent}%`;
+    cursor.style.top = `${yPercent}%`;
+  }
+
+  function resetAll() {
+    capslock.classList.remove("active");
+    keyUp.classList.remove("active");
+    keyLeft.classList.remove("active");
+    keyDown.classList.remove("active");
+    keyRight.classList.remove("active");
+    keyRshift.classList.remove("active");
+    keyRctrl.classList.remove("active");
+    overlay.classList.remove("active");
+    menu.classList.remove("active");
+    ripple.classList.remove("animate-left", "animate-right");
+    status.innerHTML = `<span class="status-dot"></span> Mouse Mode: OFF`;
+    cursorX = 50;
+    cursorY = 50;
+    setCursorPos(cursorX, cursorY);
+  }
+
+  async function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  async function runDemoLoop() {
+    while (true) {
+      resetAll();
+      await delay(1200);
+
+      // 1. Double tap CapsLock to activate
+      capslock.classList.add("active");
+      await delay(150);
+      capslock.classList.remove("active");
+      await delay(100);
+      capslock.classList.add("active");
+      await delay(150);
+      capslock.classList.remove("active");
+
+      // Mode activates
+      status.innerHTML = `<span class="status-dot active"></span> Mouse Mode: ON`;
+      overlay.classList.add("active");
+      await delay(800);
+
+      // 2. Move right
+      keyRight.classList.add("active");
+      cursorX = 72;
+      setCursorPos(cursorX, cursorY);
+      await delay(600);
+      keyRight.classList.remove("active");
+      await delay(400);
+
+      // 3. Left click (RShift)
+      keyRshift.classList.add("active");
+      const rect = cursor.getBoundingClientRect();
+      const screenRect = cursor.parentElement.getBoundingClientRect();
+      const rx = rect.left - screenRect.left + 4;
+      const ry = rect.top - screenRect.top + 2;
+      ripple.style.left = `${rx}px`;
+      ripple.style.top = `${ry}px`;
+      ripple.classList.remove("animate-left", "animate-right");
+      void ripple.offsetWidth;
+      ripple.classList.add("animate-left");
+      await delay(200);
+      keyRshift.classList.remove("active");
+      await delay(800);
+
+      // 4. Move down
+      keyDown.classList.add("active");
+      cursorY = 70;
+      setCursorPos(cursorX, cursorY);
+      await delay(600);
+      keyDown.classList.remove("active");
+      await delay(400);
+
+      // 5. Right click (RCtrl)
+      keyRctrl.classList.add("active");
+      const rect2 = cursor.getBoundingClientRect();
+      const rx2 = rect2.left - screenRect.left + 4;
+      const ry2 = rect2.top - screenRect.top + 2;
+      ripple.style.left = `${rx2}px`;
+      ripple.style.top = `${ry2}px`;
+      ripple.classList.remove("animate-left", "animate-right");
+      void ripple.offsetWidth;
+      ripple.classList.add("animate-right");
+
+      menu.style.left = `${rx2 + 8}px`;
+      menu.style.top = `${ry2 + 8}px`;
+      menu.classList.add("active");
+
+      await delay(250);
+      keyRctrl.classList.remove("active");
+      await delay(1500);
+
+      menu.classList.remove("active");
+      await delay(400);
+
+      // 6. Double-tap CapsLock to deactivate
+      capslock.classList.add("active");
+      await delay(150);
+      capslock.classList.remove("active");
+      await delay(100);
+      capslock.classList.add("active");
+      await delay(150);
+      capslock.classList.remove("active");
+
+      overlay.classList.remove("active");
+      status.innerHTML = `<span class="status-dot"></span> Mouse Mode: OFF`;
+      await delay(2000);
+    }
+  }
+
+  runDemoLoop();
+});
+</script>
+
 </body>
 </html>
+

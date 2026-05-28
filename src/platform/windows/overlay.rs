@@ -175,7 +175,7 @@ unsafe extern "system" fn wnd_proc(
             let sm  = &*sm_ptr;
             let ctx = &mut *ctx_ptr;
 
-            if sm.is_active() {
+            if sm.is_active() && sm.overlay_enabled.load(std::sync::atomic::Ordering::Acquire) {
                 // ── Reposition the overlay to follow the cursor ───────────────
                 let mut pt = POINT::default();
                 let _ = GetCursorPos(&mut pt);
@@ -226,7 +226,7 @@ unsafe extern "system" fn wnd_proc(
                     SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE,
                 );
             } else if ctx.visible {
-                // Mouse mode turned off — hide the overlay.
+                // Mouse mode turned off (or overlay disabled) — hide the overlay.
                 let _ = ShowWindow(hwnd, SW_HIDE);
                 ctx.visible = false;
             }

@@ -6,9 +6,9 @@
 /// Thread-safety: all fields are atomic so both the hook thread (writer) and
 /// movement loop (reader) can access them without a mutex.
 
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicU16, AtomicU8, AtomicU32, AtomicI32, Ordering};
 
-use crate::platform::windows::keycodes::{parse_key, Vk, VK_CAPITAL, VK_ESCAPE};
+use crate::platform::windows::keycodes::{parse_key, VK_CAPITAL, VK_ESCAPE};
 use crate::core::config::Config;
 
 pub struct StateMachine {
@@ -19,31 +19,43 @@ pub struct StateMachine {
     /// Whether the trigger key is currently held (to handle hold mode).
     trigger_held: AtomicBool,
 
-    // Resolved VK codes from config (set once at construction, never mutated).
-    trigger_vk:   Vk,
-    exit_vk:      Vk,
-    mode:         TriggerMode,
-    double_tap_us: u64,
+    // Resolved VK codes from config (dynamic)
+    pub trigger_vk:   AtomicU16,
+    pub exit_vk:      AtomicU16,
+    mode_val:         AtomicU8, // 0 = CapsLockDoubleTap, 1 = CapsLockHold, 2 = RightAlt
+    pub double_tap_us: AtomicU64,
 
     // Movement key VKs — needed to suppress them when in mouse mode.
-    pub vk_up:    Vk,
-    pub vk_down:  Vk,
-    pub vk_left:  Vk,
-    pub vk_right: Vk,
+    pub vk_up:    AtomicU16,
+    pub vk_down:  AtomicU16,
+    pub vk_left:  AtomicU16,
+    pub vk_right: AtomicU16,
 
     // Click key VKs.
-    pub vk_click_left:   Vk,
-    pub vk_click_right:  Vk,
-    pub vk_click_middle: Vk,
+    pub vk_click_left:   AtomicU16,
+    pub vk_click_right:  AtomicU16,
+    pub vk_click_middle: AtomicU16,
 
     // Precision modifier VK.
-    pub vk_precision: Vk,
+    pub vk_precision: AtomicU16,
 
     // Scroll VKs.
-    pub vk_scroll_up:    Vk,
-    pub vk_scroll_down:  Vk,
-    pub vk_scroll_left:  Vk,
-    pub vk_scroll_right: Vk,
+    pub vk_scroll_up:    AtomicU16,
+    pub vk_scroll_down:  AtomicU16,
+    pub vk_scroll_left:  AtomicU16,
+    pub vk_scroll_right: AtomicU16,
+
+    // Dispatcher configuration values (floats stored as u32 bits)
+    pub base_speed:           AtomicU32,
+    pub max_speed:            AtomicU32,
+    pub acceleration:         AtomicU32,
+    pub precision_multiplier: AtomicU32,
+    pub scroll_speed:         AtomicI32,
+    pub tick_rate:            AtomicU32,
+
+    // Feature toggles and flags
+    pub overlay_enabled: AtomicBool,
+    pub reload_flag:     AtomicBool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -55,58 +67,131 @@ pub enum TriggerMode {
 
 impl StateMachine {
     pub fn new(cfg: &Config) -> Self {
+        let sm = Self {
+            active:             AtomicBool::new(false),
+            last_trigger_up_us: AtomicU64::new(0),
+            trigger_held:       AtomicBool::new(false),
+
+            trigger_vk:   AtomicU16::new(0),
+            exit_vk:      AtomicU16::new(0),
+            mode_val:         AtomicU8::new(0),
+            double_tap_us: AtomicU64::new(0),
+
+            vk_up:    AtomicU16::new(0),
+            vk_down:  AtomicU16::new(0),
+            vk_left:  AtomicU16::new(0),
+            vk_right: AtomicU16::new(0),
+
+            vk_click_left:   AtomicU16::new(0),
+            vk_click_right:  AtomicU16::new(0),
+            vk_click_middle: AtomicU16::new(0),
+
+            vk_precision: AtomicU16::new(0),
+
+            vk_scroll_up:    AtomicU16::new(0),
+            vk_scroll_down:  AtomicU16::new(0),
+            vk_scroll_left:  AtomicU16::new(0),
+            vk_scroll_right: AtomicU16::new(0),
+
+            base_speed:           AtomicU32::new(0),
+            max_speed:            AtomicU32::new(0),
+            acceleration:         AtomicU32::new(0),
+            precision_multiplier: AtomicU32::new(0),
+            scroll_speed:         AtomicI32::new(0),
+            tick_rate:            AtomicU32::new(0),
+
+            overlay_enabled: AtomicBool::new(true),
+            reload_flag:     AtomicBool::new(false),
+        };
+
+        sm.reload_config(cfg);
+        sm.reload_flag.store(false, Ordering::Release); // clear reload flag on creation
+        sm
+    }
+
+    pub fn reload_config(&self, cfg: &Config) {
         let mode = match cfg.general.mouse_mode.as_str() {
             "capslock_hold" => TriggerMode::CapsLockHold,
             "right_alt"     => TriggerMode::RightAlt,
             _               => TriggerMode::CapsLockDoubleTap,
         };
 
+        let mode_val = match mode {
+            TriggerMode::CapsLockDoubleTap => 0,
+            TriggerMode::CapsLockHold => 1,
+            TriggerMode::RightAlt => 2,
+        };
+        self.mode_val.store(mode_val, Ordering::Release);
+
         let trigger_vk = match mode {
             TriggerMode::RightAlt => parse_key("ralt").unwrap(),
             _                     => VK_CAPITAL,
         };
+        self.trigger_vk.store(trigger_vk, Ordering::Release);
 
-        let exit_vk = parse_key(&cfg.general.exit_key)
-            .unwrap_or(VK_ESCAPE);
+        let exit_vk = parse_key(&cfg.general.exit_key).unwrap_or(VK_ESCAPE);
+        self.exit_vk.store(exit_vk, Ordering::Release);
 
-        Self {
-            active:             AtomicBool::new(false),
-            last_trigger_up_us: AtomicU64::new(0),
-            trigger_held:       AtomicBool::new(false),
+        self.double_tap_us.store(cfg.general.double_tap_ms * 1_000, Ordering::Release);
 
-            trigger_vk,
-            exit_vk,
-            mode,
-            double_tap_us: cfg.general.double_tap_ms * 1_000,
+        self.vk_up.store(parse_key(&cfg.movement.up).unwrap_or(crate::platform::windows::keycodes::VK_UP), Ordering::Release);
+        self.vk_down.store(parse_key(&cfg.movement.down).unwrap_or(crate::platform::windows::keycodes::VK_DOWN), Ordering::Release);
+        self.vk_left.store(parse_key(&cfg.movement.left).unwrap_or(crate::platform::windows::keycodes::VK_LEFT), Ordering::Release);
+        self.vk_right.store(parse_key(&cfg.movement.right).unwrap_or(crate::platform::windows::keycodes::VK_RIGHT), Ordering::Release);
 
-            vk_up:    parse_key(&cfg.movement.up).unwrap_or(crate::platform::windows::keycodes::VK_UP),
-            vk_down:  parse_key(&cfg.movement.down).unwrap_or(crate::platform::windows::keycodes::VK_DOWN),
-            vk_left:  parse_key(&cfg.movement.left).unwrap_or(crate::platform::windows::keycodes::VK_LEFT),
-            vk_right: parse_key(&cfg.movement.right).unwrap_or(crate::platform::windows::keycodes::VK_RIGHT),
+        self.vk_click_left.store(parse_key(&cfg.clicks.left).unwrap_or(crate::platform::windows::keycodes::VK_SHIFT), Ordering::Release);
+        self.vk_click_right.store(parse_key(&cfg.clicks.right).unwrap_or(crate::platform::windows::keycodes::VK_CONTROL), Ordering::Release);
+        self.vk_click_middle.store(parse_key(&cfg.clicks.middle).unwrap_or(crate::platform::windows::keycodes::VK_MENU), Ordering::Release);
 
-            vk_click_left:   parse_key(&cfg.clicks.left).unwrap_or(crate::platform::windows::keycodes::VK_SHIFT),
-            vk_click_right:  parse_key(&cfg.clicks.right).unwrap_or(crate::platform::windows::keycodes::VK_CONTROL),
-            vk_click_middle: parse_key(&cfg.clicks.middle).unwrap_or(crate::platform::windows::keycodes::VK_MENU),
+        self.vk_precision.store(parse_key(&cfg.precision.modifier).unwrap_or(VK_CAPITAL), Ordering::Release);
 
-            vk_precision:    parse_key(&cfg.precision.modifier).unwrap_or(VK_CAPITAL),
+        self.vk_scroll_up.store(parse_key(&cfg.scroll.up).unwrap_or(crate::platform::windows::keycodes::VK_PRIOR), Ordering::Release);
+        self.vk_scroll_down.store(parse_key(&cfg.scroll.down).unwrap_or(crate::platform::windows::keycodes::VK_NEXT), Ordering::Release);
+        self.vk_scroll_left.store(parse_key(&cfg.scroll.left).unwrap_or(crate::platform::windows::keycodes::VK_HOME), Ordering::Release);
+        self.vk_scroll_right.store(parse_key(&cfg.scroll.right).unwrap_or(crate::platform::windows::keycodes::VK_END), Ordering::Release);
 
-            vk_scroll_up:    parse_key(&cfg.scroll.up).unwrap_or(crate::platform::windows::keycodes::VK_PRIOR),
-            vk_scroll_down:  parse_key(&cfg.scroll.down).unwrap_or(crate::platform::windows::keycodes::VK_NEXT),
-            vk_scroll_left:  parse_key(&cfg.scroll.left).unwrap_or(crate::platform::windows::keycodes::VK_HOME),
-            vk_scroll_right: parse_key(&cfg.scroll.right).unwrap_or(crate::platform::windows::keycodes::VK_END),
-        }
+        self.base_speed.store(cfg.movement.base_speed.to_bits(), Ordering::Release);
+        self.max_speed.store(cfg.movement.max_speed.to_bits(), Ordering::Release);
+        self.acceleration.store(cfg.movement.acceleration.to_bits(), Ordering::Release);
+        self.precision_multiplier.store(cfg.precision.multiplier.to_bits(), Ordering::Release);
+        self.scroll_speed.store(cfg.scroll.speed, Ordering::Release);
+        self.tick_rate.store(cfg.movement.tick_rate, Ordering::Release);
+
+        self.reload_flag.store(true, Ordering::Release);
     }
 
     pub fn is_active(&self) -> bool {
         self.active.load(Ordering::Acquire)
     }
 
+    #[allow(dead_code)]
+    pub fn set_active(&self, active: bool) {
+        self.active.store(active, Ordering::Release);
+        eprintln!("[sm] mouse mode set to {}", if active { "ON" } else { "OFF" });
+    }
+
+    pub fn toggle_active(&self) -> bool {
+        let prev = self.active.fetch_xor(true, Ordering::AcqRel);
+        let new_val = !prev;
+        eprintln!("[sm] mouse mode toggled to {}", if new_val { "ON" } else { "OFF" });
+        new_val
+    }
+
+    fn get_mode(&self) -> TriggerMode {
+        match self.mode_val.load(Ordering::Acquire) {
+            1 => TriggerMode::CapsLockHold,
+            2 => TriggerMode::RightAlt,
+            _ => TriggerMode::CapsLockDoubleTap,
+        }
+    }
+
     /// Called by hook on key-down.  Returns true if the key should be suppressed
     /// (not forwarded to the focused application).
     pub fn on_key_down(&self, vk: u16, _now_us: u64) -> bool {
-        if vk == self.trigger_vk {
+        let trigger_vk = self.trigger_vk.load(Ordering::Acquire);
+        if vk == trigger_vk {
             self.trigger_held.store(true, Ordering::Release);
-            if self.mode == TriggerMode::CapsLockHold {
+            if self.get_mode() == TriggerMode::CapsLockHold {
                 self.active.store(true, Ordering::Release);
             }
             // Suppress CapsLock to prevent toggling the caps indicator.
@@ -115,7 +200,8 @@ impl StateMachine {
 
         let active = self.active.load(Ordering::Acquire);
 
-        if vk == self.exit_vk && active {
+        let exit_vk = self.exit_vk.load(Ordering::Acquire);
+        if vk == exit_vk && active {
             self.active.store(false, Ordering::Release);
             return true;
         }
@@ -130,13 +216,15 @@ impl StateMachine {
 
     /// Called by hook on key-up.  Returns true if key should be suppressed.
     pub fn on_key_up(&self, vk: u16, now_us: u64) -> bool {
-        if vk == self.trigger_vk {
+        let trigger_vk = self.trigger_vk.load(Ordering::Acquire);
+        if vk == trigger_vk {
             self.trigger_held.store(false, Ordering::Release);
 
-            match self.mode {
+            match self.get_mode() {
                 TriggerMode::CapsLockDoubleTap => {
                     let last = self.last_trigger_up_us.load(Ordering::Acquire);
-                    if last != 0 && now_us.saturating_sub(last) <= self.double_tap_us {
+                    let double_tap_us = self.double_tap_us.load(Ordering::Acquire);
+                    if last != 0 && now_us.saturating_sub(last) <= double_tap_us {
                         // Toggle mouse mode.
                         let was_active = self.active.fetch_xor(true, Ordering::AcqRel);
                         self.last_trigger_up_us.store(0, Ordering::Release);
@@ -173,19 +261,19 @@ impl StateMachine {
     ///   - a specific configured key (e.g. "rshift" = VK_RSHIFT 0xA1) suppresses
     ///     only VK_RSHIFT; VK_LSHIFT passes through normally.
     fn is_mouse_mode_key(&self, vk: u16) -> bool {
-        Self::vk_matches(vk, self.vk_click_left)
-            || Self::vk_matches(vk, self.vk_click_right)
-            || Self::vk_matches(vk, self.vk_click_middle)
-            || Self::vk_matches(vk, self.vk_precision)
-            || vk == self.vk_up
-            || vk == self.vk_down
-            || vk == self.vk_left
-            || vk == self.vk_right
-            || vk == self.vk_scroll_up
-            || vk == self.vk_scroll_down
-            || vk == self.vk_scroll_left
-            || vk == self.vk_scroll_right
-            || vk == self.exit_vk
+        Self::vk_matches(vk, self.vk_click_left.load(Ordering::Acquire))
+            || Self::vk_matches(vk, self.vk_click_right.load(Ordering::Acquire))
+            || Self::vk_matches(vk, self.vk_click_middle.load(Ordering::Acquire))
+            || Self::vk_matches(vk, self.vk_precision.load(Ordering::Acquire))
+            || vk == self.vk_up.load(Ordering::Acquire)
+            || vk == self.vk_down.load(Ordering::Acquire)
+            || vk == self.vk_left.load(Ordering::Acquire)
+            || vk == self.vk_right.load(Ordering::Acquire)
+            || vk == self.vk_scroll_up.load(Ordering::Acquire)
+            || vk == self.vk_scroll_down.load(Ordering::Acquire)
+            || vk == self.vk_scroll_left.load(Ordering::Acquire)
+            || vk == self.vk_scroll_right.load(Ordering::Acquire)
+            || vk == self.exit_vk.load(Ordering::Acquire)
     }
 
     /// Returns true if incoming `vk` corresponds to configured `target`.
@@ -206,3 +294,4 @@ impl StateMachine {
         }
     }
 }
+

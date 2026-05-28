@@ -1,9 +1,5 @@
-/// Reads key states and dispatches mouse movement, clicks, and scroll.
-///
-/// This module is purely a coordinator — it does not own any state itself;
-/// it reads from KeyStateTable and StateMachine and delegates to send_input.
-
 use std::sync::Arc;
+use std::sync::atomic::Ordering;
 
 use crate::core::acceleration::AccelParams;
 use crate::core::config::Config;
@@ -37,7 +33,7 @@ impl Dispatcher {
         state_machine: Arc<StateMachine>,
         cfg: &Config,
     ) -> Self {
-        Self {
+        let mut d = Self {
             key_states,
             state_machine,
             accel: AccelParams {
@@ -56,7 +52,18 @@ impl Dispatcher {
             scroll_down_fired: false,
             scroll_left_fired: false,
             scroll_right_fired: false,
-        }
+        };
+        d.reload_params();
+        d
+    }
+
+    pub fn reload_params(&mut self) {
+        let sm = &*self.state_machine;
+        self.accel.base_speed = f32::from_bits(sm.base_speed.load(Ordering::Acquire));
+        self.accel.max_speed = f32::from_bits(sm.max_speed.load(Ordering::Acquire));
+        self.accel.acceleration = f32::from_bits(sm.acceleration.load(Ordering::Acquire));
+        self.accel.precision_mul = f32::from_bits(sm.precision_multiplier.load(Ordering::Acquire));
+        self.scroll_speed = sm.scroll_speed.load(Ordering::Acquire);
     }
 
     /// Called once per movement tick from the movement loop.
@@ -80,22 +87,22 @@ impl Dispatcher {
             let sm = &*self.state_machine;
             let ks = &*self.key_states;
             (
-                ks.is_down(sm.vk_precision),
-                ks.is_down(sm.vk_up),
-                ks.is_down(sm.vk_down),
-                ks.is_down(sm.vk_left),
-                ks.is_down(sm.vk_right),
-                ks.held_duration_us(sm.vk_up,    now_us),
-                ks.held_duration_us(sm.vk_down,  now_us),
-                ks.held_duration_us(sm.vk_left,  now_us),
-                ks.held_duration_us(sm.vk_right, now_us),
-                ks.is_down(sm.vk_click_left),
-                ks.is_down(sm.vk_click_right),
-                ks.is_down(sm.vk_click_middle),
-                ks.is_down(sm.vk_scroll_up),
-                ks.is_down(sm.vk_scroll_down),
-                ks.is_down(sm.vk_scroll_left),
-                ks.is_down(sm.vk_scroll_right),
+                ks.is_down(sm.vk_precision.load(Ordering::Acquire)),
+                ks.is_down(sm.vk_up.load(Ordering::Acquire)),
+                ks.is_down(sm.vk_down.load(Ordering::Acquire)),
+                ks.is_down(sm.vk_left.load(Ordering::Acquire)),
+                ks.is_down(sm.vk_right.load(Ordering::Acquire)),
+                ks.held_duration_us(sm.vk_up.load(Ordering::Acquire),    now_us),
+                ks.held_duration_us(sm.vk_down.load(Ordering::Acquire),  now_us),
+                ks.held_duration_us(sm.vk_left.load(Ordering::Acquire), now_us),
+                ks.held_duration_us(sm.vk_right.load(Ordering::Acquire), now_us),
+                ks.is_down(sm.vk_click_left.load(Ordering::Acquire)),
+                ks.is_down(sm.vk_click_right.load(Ordering::Acquire)),
+                ks.is_down(sm.vk_click_middle.load(Ordering::Acquire)),
+                ks.is_down(sm.vk_scroll_up.load(Ordering::Acquire)),
+                ks.is_down(sm.vk_scroll_down.load(Ordering::Acquire)),
+                ks.is_down(sm.vk_scroll_left.load(Ordering::Acquire)),
+                ks.is_down(sm.vk_scroll_right.load(Ordering::Acquire)),
             )
         };
         // sm and ks are no longer borrowed here.

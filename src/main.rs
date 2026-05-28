@@ -49,7 +49,9 @@ fn main() {
     );
 
     // ── 7. Spawn tray thread (shows icon and handles exit) ────────────────────
-    let _tray_handle = platform::windows::tray::spawn_tray_thread();
+    let _tray_handle = platform::windows::tray::spawn_tray_thread(
+        Arc::clone(&state_machine),
+    );
 
     eprintln!("[main] running — double-tap CapsLock to enter mouse mode");
 

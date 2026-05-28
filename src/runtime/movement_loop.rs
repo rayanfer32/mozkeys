@@ -21,28 +21,35 @@ use crate::core::key_state::KeyStateTable;
 use crate::core::state_machine::StateMachine;
 use crate::platform::windows::timers;
 
-/// Spawn the movement loop thread.
 pub fn spawn_movement_loop(
     key_states: Arc<KeyStateTable>,
     state_machine: Arc<StateMachine>,
     cfg: &Config,
 ) -> thread::JoinHandle<()> {
-    let tick_rate = cfg.movement.tick_rate.max(1);
-    let mut dispatcher = Dispatcher::new(key_states, state_machine, cfg);
+    let dispatcher = Dispatcher::new(key_states, Arc::clone(&state_machine), cfg);
 
     thread::Builder::new()
         .name("movement".into())
-        .spawn(move || run_loop(tick_rate, &mut dispatcher))
+        .spawn(move || run_loop(state_machine, dispatcher))
         .expect("failed to spawn movement thread")
 }
 
-fn run_loop(tick_rate_hz: u32, dispatcher: &mut Dispatcher) {
-    // Microseconds per tick.
-    let tick_us = 1_000_000u64 / tick_rate_hz as u64;
+fn run_loop(state_machine: Arc<StateMachine>, mut dispatcher: Dispatcher) {
+    use std::sync::atomic::Ordering;
+
+    let mut tick_rate_hz = state_machine.tick_rate.load(Ordering::Acquire).max(1);
+    let mut tick_us = 1_000_000u64 / tick_rate_hz as u64;
 
     let mut next_tick_us = timers::now_us() + tick_us;
 
     loop {
+        if state_machine.reload_flag.load(Ordering::Acquire) {
+            dispatcher.reload_params();
+            tick_rate_hz = state_machine.tick_rate.load(Ordering::Acquire).max(1);
+            tick_us = 1_000_000u64 / tick_rate_hz as u64;
+            state_machine.reload_flag.store(false, Ordering::Release);
+        }
+
         let now_us = timers::now_us();
 
         if now_us >= next_tick_us {

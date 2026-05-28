@@ -60,6 +60,8 @@ pub struct StateMachine {
 
     // Chord trigger state
     pub rctrl_rshift_triggered: AtomicBool,
+    pub rctrl_suppressed:        AtomicBool,
+    pub rshift_suppressed:       AtomicBool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -109,6 +111,8 @@ impl StateMachine {
             reload_flag:     AtomicBool::new(false),
 
             rctrl_rshift_triggered: AtomicBool::new(false),
+            rctrl_suppressed:       AtomicBool::new(false),
+            rshift_suppressed:      AtomicBool::new(false),
         };
 
         sm.reload_config(cfg);
@@ -202,13 +206,22 @@ impl StateMachine {
         if mode == TriggerMode::RCtrlRShift {
             if vk == 0xA3 || vk == 0xA1 {
                 let other_key = if vk == 0xA3 { 0xA1 } else { 0xA3 };
-                if key_states.is_down(other_key) {
+                let suppress = if key_states.is_down(other_key) {
                     if !self.rctrl_rshift_triggered.load(Ordering::Acquire) {
                         self.rctrl_rshift_triggered.store(true, Ordering::Release);
                         self.toggle_active();
                     }
+                    true
+                } else {
+                    self.is_active()
+                };
+
+                if vk == 0xA3 {
+                    self.rctrl_suppressed.store(suppress, Ordering::Release);
+                } else {
+                    self.rshift_suppressed.store(suppress, Ordering::Release);
                 }
-                return true; // Always suppress trigger keys
+                return suppress;
             }
         } else {
             let trigger_vk = self.trigger_vk.load(Ordering::Acquire);
@@ -244,7 +257,12 @@ impl StateMachine {
         if mode == TriggerMode::RCtrlRShift {
             if vk == 0xA3 || vk == 0xA1 {
                 self.rctrl_rshift_triggered.store(false, Ordering::Release);
-                return true; // Always suppress trigger keys
+                let suppressed = if vk == 0xA3 {
+                    self.rctrl_suppressed.swap(false, Ordering::AcqRel)
+                } else {
+                    self.rshift_suppressed.swap(false, Ordering::AcqRel)
+                };
+                return suppressed;
             }
         } else {
             let trigger_vk = self.trigger_vk.load(Ordering::Acquire);

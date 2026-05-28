@@ -10,6 +10,7 @@ use std::sync::atomic::{AtomicBool, AtomicU64, AtomicU16, AtomicU8, AtomicU32, A
 
 use crate::platform::windows::keycodes::{parse_key, VK_CAPITAL, VK_ESCAPE};
 use crate::core::config::Config;
+use crate::core::key_state::KeyStateTable;
 
 pub struct StateMachine {
     /// True while mouse mode is active.
@@ -22,7 +23,7 @@ pub struct StateMachine {
     // Resolved VK codes from config (dynamic)
     pub trigger_vk:   AtomicU16,
     pub exit_vk:      AtomicU16,
-    mode_val:         AtomicU8, // 0 = CapsLockDoubleTap, 1 = CapsLockHold, 2 = RightAlt
+    mode_val:         AtomicU8, // 0 = CapsLockDoubleTap, 1 = CapsLockHold, 2 = RightAlt, 3 = RCtrlRShift
     pub double_tap_us: AtomicU64,
 
     // Movement key VKs — needed to suppress them when in mouse mode.
@@ -56,6 +57,9 @@ pub struct StateMachine {
     // Feature toggles and flags
     pub overlay_enabled: AtomicBool,
     pub reload_flag:     AtomicBool,
+
+    // Chord trigger state
+    pub rctrl_rshift_triggered: AtomicBool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -63,12 +67,13 @@ pub enum TriggerMode {
     CapsLockDoubleTap,
     CapsLockHold,
     RightAlt,
+    RCtrlRShift,
 }
 
 impl StateMachine {
     pub fn new(cfg: &Config) -> Self {
         let sm = Self {
-            active:             AtomicBool::new(false),
+            active:             AtomicBool::new(true),
             last_trigger_up_us: AtomicU64::new(0),
             trigger_held:       AtomicBool::new(false),
 
@@ -102,6 +107,8 @@ impl StateMachine {
 
             overlay_enabled: AtomicBool::new(true),
             reload_flag:     AtomicBool::new(false),
+
+            rctrl_rshift_triggered: AtomicBool::new(false),
         };
 
         sm.reload_config(cfg);
@@ -113,6 +120,7 @@ impl StateMachine {
         let mode = match cfg.general.mouse_mode.as_str() {
             "capslock_hold" => TriggerMode::CapsLockHold,
             "right_alt"     => TriggerMode::RightAlt,
+            "rctrl_rshift"  => TriggerMode::RCtrlRShift,
             _               => TriggerMode::CapsLockDoubleTap,
         };
 
@@ -120,6 +128,7 @@ impl StateMachine {
             TriggerMode::CapsLockDoubleTap => 0,
             TriggerMode::CapsLockHold => 1,
             TriggerMode::RightAlt => 2,
+            TriggerMode::RCtrlRShift => 3,
         };
         self.mode_val.store(mode_val, Ordering::Release);
 
@@ -181,21 +190,36 @@ impl StateMachine {
         match self.mode_val.load(Ordering::Acquire) {
             1 => TriggerMode::CapsLockHold,
             2 => TriggerMode::RightAlt,
+            3 => TriggerMode::RCtrlRShift,
             _ => TriggerMode::CapsLockDoubleTap,
         }
     }
 
     /// Called by hook on key-down.  Returns true if the key should be suppressed
     /// (not forwarded to the focused application).
-    pub fn on_key_down(&self, vk: u16, _now_us: u64) -> bool {
-        let trigger_vk = self.trigger_vk.load(Ordering::Acquire);
-        if vk == trigger_vk {
-            self.trigger_held.store(true, Ordering::Release);
-            if self.get_mode() == TriggerMode::CapsLockHold {
-                self.active.store(true, Ordering::Release);
+    pub fn on_key_down(&self, vk: u16, _now_us: u64, key_states: &KeyStateTable) -> bool {
+        let mode = self.get_mode();
+        if mode == TriggerMode::RCtrlRShift {
+            if vk == 0xA3 || vk == 0xA1 {
+                let other_key = if vk == 0xA3 { 0xA1 } else { 0xA3 };
+                if key_states.is_down(other_key) {
+                    if !self.rctrl_rshift_triggered.load(Ordering::Acquire) {
+                        self.rctrl_rshift_triggered.store(true, Ordering::Release);
+                        self.toggle_active();
+                    }
+                }
+                return true; // Always suppress trigger keys
             }
-            // Suppress CapsLock to prevent toggling the caps indicator.
-            return true;
+        } else {
+            let trigger_vk = self.trigger_vk.load(Ordering::Acquire);
+            if vk == trigger_vk {
+                self.trigger_held.store(true, Ordering::Release);
+                if mode == TriggerMode::CapsLockHold {
+                    self.active.store(true, Ordering::Release);
+                }
+                // Suppress CapsLock to prevent toggling the caps indicator.
+                return true;
+            }
         }
 
         let active = self.active.load(Ordering::Acquire);
@@ -215,34 +239,43 @@ impl StateMachine {
     }
 
     /// Called by hook on key-up.  Returns true if key should be suppressed.
-    pub fn on_key_up(&self, vk: u16, now_us: u64) -> bool {
-        let trigger_vk = self.trigger_vk.load(Ordering::Acquire);
-        if vk == trigger_vk {
-            self.trigger_held.store(false, Ordering::Release);
-
-            match self.get_mode() {
-                TriggerMode::CapsLockDoubleTap => {
-                    let last = self.last_trigger_up_us.load(Ordering::Acquire);
-                    let double_tap_us = self.double_tap_us.load(Ordering::Acquire);
-                    if last != 0 && now_us.saturating_sub(last) <= double_tap_us {
-                        // Toggle mouse mode.
-                        let was_active = self.active.fetch_xor(true, Ordering::AcqRel);
-                        self.last_trigger_up_us.store(0, Ordering::Release);
-                        eprintln!("[sm] mouse mode {}", if !was_active { "ON" } else { "OFF" });
-                    } else {
-                        self.last_trigger_up_us.store(now_us, Ordering::Release);
-                    }
-                }
-                TriggerMode::CapsLockHold => {
-                    self.active.store(false, Ordering::Release);
-                }
-                TriggerMode::RightAlt => {
-                    // Toggle on release.
-                    let was_active = self.active.fetch_xor(true, Ordering::AcqRel);
-                    eprintln!("[sm] mouse mode {}", if !was_active { "ON" } else { "OFF" });
-                }
+    pub fn on_key_up(&self, vk: u16, now_us: u64, _key_states: &KeyStateTable) -> bool {
+        let mode = self.get_mode();
+        if mode == TriggerMode::RCtrlRShift {
+            if vk == 0xA3 || vk == 0xA1 {
+                self.rctrl_rshift_triggered.store(false, Ordering::Release);
+                return true; // Always suppress trigger keys
             }
-            return true; // always suppress trigger key
+        } else {
+            let trigger_vk = self.trigger_vk.load(Ordering::Acquire);
+            if vk == trigger_vk {
+                self.trigger_held.store(false, Ordering::Release);
+
+                match self.get_mode() {
+                    TriggerMode::CapsLockDoubleTap => {
+                        let last = self.last_trigger_up_us.load(Ordering::Acquire);
+                        let double_tap_us = self.double_tap_us.load(Ordering::Acquire);
+                        if last != 0 && now_us.saturating_sub(last) <= double_tap_us {
+                            // Toggle mouse mode.
+                            let was_active = self.active.fetch_xor(true, Ordering::AcqRel);
+                            self.last_trigger_up_us.store(0, Ordering::Release);
+                            eprintln!("[sm] mouse mode {}", if !was_active { "ON" } else { "OFF" });
+                        } else {
+                            self.last_trigger_up_us.store(now_us, Ordering::Release);
+                        }
+                    }
+                    TriggerMode::CapsLockHold => {
+                        self.active.store(false, Ordering::Release);
+                    }
+                    TriggerMode::RightAlt => {
+                        // Toggle on release.
+                        let was_active = self.active.fetch_xor(true, Ordering::AcqRel);
+                        eprintln!("[sm] mouse mode {}", if !was_active { "ON" } else { "OFF" });
+                    }
+                    _ => {}
+                }
+                return true; // always suppress trigger key
+            }
         }
 
         let active = self.active.load(Ordering::Acquire);
@@ -261,7 +294,13 @@ impl StateMachine {
     ///   - a specific configured key (e.g. "rshift" = VK_RSHIFT 0xA1) suppresses
     ///     only VK_RSHIFT; VK_LSHIFT passes through normally.
     fn is_mouse_mode_key(&self, vk: u16) -> bool {
-        Self::vk_matches(vk, self.vk_click_left.load(Ordering::Acquire))
+        let is_trigger = if self.get_mode() == TriggerMode::RCtrlRShift {
+            vk == 0xA3 || vk == 0xA1
+        } else {
+            vk == self.trigger_vk.load(Ordering::Acquire)
+        };
+        is_trigger
+            || Self::vk_matches(vk, self.vk_click_left.load(Ordering::Acquire))
             || Self::vk_matches(vk, self.vk_click_right.load(Ordering::Acquire))
             || Self::vk_matches(vk, self.vk_click_middle.load(Ordering::Acquire))
             || Self::vk_matches(vk, self.vk_precision.load(Ordering::Acquire))
@@ -294,4 +333,5 @@ impl StateMachine {
         }
     }
 }
+
 

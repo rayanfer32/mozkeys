@@ -207,7 +207,7 @@ fn write_default(path: &std::path::Path) -> std::io::Result<()> {
 # (hot reload can be added in a future release)
 
 [general]
-mouse_mode    = "capslock_doubletap"   # capslock_doubletap | capslock_hold | right_alt
+mouse_mode    = "capslock_doubletap"   # capslock_doubletap | capslock_hold | right_alt | rctrl_rshift
 double_tap_ms = 250                    # max ms between taps to register as double-tap
 exit_key      = "escape"               # key to exit mouse mode
 

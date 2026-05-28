@@ -120,14 +120,14 @@ unsafe extern "system" fn hook_proc(
 
             if is_down {
                 key_states.set_down(vk, now_us);
-                let suppress = sm.on_key_down(vk, now_us);
+                let suppress = sm.on_key_down(vk, now_us, key_states);
                 if suppress {
                     // Return non-zero to suppress key from reaching other apps.
                     return LRESULT(1);
                 }
             } else if is_up {
                 key_states.set_up(vk, now_us);
-                let suppress = sm.on_key_up(vk, now_us);
+                let suppress = sm.on_key_up(vk, now_us, key_states);
                 if suppress {
                     return LRESULT(1);
                 }

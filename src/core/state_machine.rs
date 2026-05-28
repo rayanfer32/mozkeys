@@ -300,6 +300,7 @@ impl StateMachine {
             vk == self.trigger_vk.load(Ordering::Acquire)
         };
         is_trigger
+            || vk == 0xA1
             || Self::vk_matches(vk, self.vk_click_left.load(Ordering::Acquire))
             || Self::vk_matches(vk, self.vk_click_right.load(Ordering::Acquire))
             || Self::vk_matches(vk, self.vk_click_middle.load(Ordering::Acquire))

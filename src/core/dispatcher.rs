@@ -21,6 +21,7 @@ pub struct Dispatcher {
     click_left_fired:   bool,
     click_right_fired:  bool,
     click_middle_fired: bool,
+    right_click_suppressed: bool,
     scroll_up_fired:   bool,
     scroll_down_fired: bool,
     scroll_left_fired: bool,
@@ -48,6 +49,7 @@ impl Dispatcher {
             click_left_fired:   false,
             click_right_fired:  false,
             click_middle_fired: false,
+            right_click_suppressed: false,
             scroll_up_fired:   false,
             scroll_down_fired: false,
             scroll_left_fired: false,
@@ -87,7 +89,7 @@ impl Dispatcher {
             let sm = &*self.state_machine;
             let ks = &*self.key_states;
             (
-                ks.is_down(sm.vk_precision.load(Ordering::Acquire)),
+                ks.is_down(sm.vk_precision.load(Ordering::Acquire)) || ks.is_down(0xA1),
                 ks.is_down(sm.vk_up.load(Ordering::Acquire)),
                 ks.is_down(sm.vk_down.load(Ordering::Acquire)),
                 ks.is_down(sm.vk_left.load(Ordering::Acquire)),
@@ -111,6 +113,18 @@ impl Dispatcher {
         let moving = up_held || down_held || left_held || right_held;
 
         if moving {
+            let rshift_is_click_r = self.state_machine.vk_click_right.load(Ordering::Acquire) == 0xA1;
+            // Check if Right Shift (0xA1) is held for precision movement
+            if self.key_states.is_down(0xA1) {
+                // If Right Click was fired by Right Shift, suppress it!
+                if self.click_right_fired && !self.right_click_suppressed {
+                    if !rshift_is_click_r {
+                        send_input::release(MouseButton::Right);
+                    }
+                    self.right_click_suppressed = true;
+                }
+            }
+
             let max_held = [held_up, held_down, held_left, held_right]
                 .into_iter().max().unwrap_or(0);
 
@@ -151,12 +165,31 @@ impl Dispatcher {
             self.click_left_fired = false;
         }
 
+        let rshift_is_click_r = self.state_machine.vk_click_right.load(Ordering::Acquire) == 0xA1;
+
         if click_r && !self.click_right_fired {
-            send_input::press(MouseButton::Right);
-            self.click_right_fired = true;
+            if rshift_is_click_r {
+                self.click_right_fired = true;
+                if moving {
+                    self.right_click_suppressed = true;
+                }
+            } else {
+                send_input::press(MouseButton::Right);
+                self.click_right_fired = true;
+            }
         } else if !click_r && self.click_right_fired {
-            send_input::release(MouseButton::Right);
+            if rshift_is_click_r {
+                if !self.right_click_suppressed {
+                    send_input::press(MouseButton::Right);
+                    send_input::release(MouseButton::Right);
+                }
+            } else {
+                if !self.right_click_suppressed {
+                    send_input::release(MouseButton::Right);
+                }
+            }
             self.click_right_fired = false;
+            self.right_click_suppressed = false;
         }
 
         if click_m && !self.click_middle_fired {
@@ -203,9 +236,13 @@ impl Dispatcher {
             self.click_left_fired = false;
         }
         if self.click_right_fired {
-            send_input::release(MouseButton::Right);
+            let rshift_is_click_r = self.state_machine.vk_click_right.load(Ordering::Acquire) == 0xA1;
+            if !self.right_click_suppressed && !rshift_is_click_r {
+                send_input::release(MouseButton::Right);
+            }
             self.click_right_fired = false;
         }
+        self.right_click_suppressed = false;
         if self.click_middle_fired {
             send_input::release(MouseButton::Middle);
             self.click_middle_fired = false;

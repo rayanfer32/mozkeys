@@ -26,6 +26,12 @@ pub struct Dispatcher {
     scroll_down_fired: bool,
     scroll_left_fired: bool,
     scroll_right_fired: bool,
+
+    // Ignore click keys that were already held down on entering mouse mode
+    was_active:           bool,
+    click_left_ignored:   bool,
+    click_right_ignored:  bool,
+    click_middle_ignored: bool,
 }
 
 impl Dispatcher {
@@ -54,6 +60,10 @@ impl Dispatcher {
             scroll_down_fired: false,
             scroll_left_fired: false,
             scroll_right_fired: false,
+            was_active:         false,
+            click_left_ignored:   false,
+            click_right_ignored:  false,
+            click_middle_ignored: false,
         };
         d.reload_params();
         d
@@ -75,6 +85,7 @@ impl Dispatcher {
             self.accum_x = 0.0;
             self.accum_y = 0.0;
             self.reset_click_state();
+            self.was_active = false;
             return;
         }
 
@@ -108,6 +119,15 @@ impl Dispatcher {
             )
         };
         // sm and ks are no longer borrowed here.
+
+        let just_activated = !self.was_active;
+        self.was_active = true;
+
+        if just_activated {
+            if click_l { self.click_left_ignored = true; }
+            if click_r { self.click_right_ignored = true; }
+            if click_m { self.click_middle_ignored = true; }
+        }
 
         // ── cursor movement ───────────────────────────────────────────────────
         let moving = up_held || down_held || left_held || right_held;
@@ -157,47 +177,62 @@ impl Dispatcher {
         }
 
         // ── clicks (hold to drag, release to let go) ──────────────────────────
-        if click_l && !self.click_left_fired {
-            send_input::press(MouseButton::Left);
-            self.click_left_fired = true;
-        } else if !click_l && self.click_left_fired {
-            send_input::release(MouseButton::Left);
-            self.click_left_fired = false;
+        if click_l {
+            if !self.click_left_ignored && !self.click_left_fired {
+                send_input::press(MouseButton::Left);
+                self.click_left_fired = true;
+            }
+        } else {
+            if self.click_left_fired {
+                send_input::release(MouseButton::Left);
+                self.click_left_fired = false;
+            }
+            self.click_left_ignored = false;
         }
 
         let rshift_is_click_r = self.state_machine.vk_click_right.load(Ordering::Acquire) == 0xA1;
 
-        if click_r && !self.click_right_fired {
-            if rshift_is_click_r {
-                self.click_right_fired = true;
-                if moving {
-                    self.right_click_suppressed = true;
-                }
-            } else {
-                send_input::press(MouseButton::Right);
-                self.click_right_fired = true;
-            }
-        } else if !click_r && self.click_right_fired {
-            if rshift_is_click_r {
-                if !self.right_click_suppressed {
+        if click_r {
+            if !self.click_right_ignored && !self.click_right_fired {
+                if rshift_is_click_r {
+                    self.click_right_fired = true;
+                    if moving {
+                        self.right_click_suppressed = true;
+                    }
+                } else {
                     send_input::press(MouseButton::Right);
-                    send_input::release(MouseButton::Right);
-                }
-            } else {
-                if !self.right_click_suppressed {
-                    send_input::release(MouseButton::Right);
+                    self.click_right_fired = true;
                 }
             }
-            self.click_right_fired = false;
-            self.right_click_suppressed = false;
+        } else {
+            if self.click_right_fired {
+                if rshift_is_click_r {
+                    if !self.right_click_suppressed {
+                        send_input::press(MouseButton::Right);
+                        send_input::release(MouseButton::Right);
+                    }
+                } else {
+                    if !self.right_click_suppressed {
+                        send_input::release(MouseButton::Right);
+                    }
+                }
+                self.click_right_fired = false;
+                self.right_click_suppressed = false;
+            }
+            self.click_right_ignored = false;
         }
 
-        if click_m && !self.click_middle_fired {
-            send_input::press(MouseButton::Middle);
-            self.click_middle_fired = true;
-        } else if !click_m && self.click_middle_fired {
-            send_input::release(MouseButton::Middle);
-            self.click_middle_fired = false;
+        if click_m {
+            if !self.click_middle_ignored && !self.click_middle_fired {
+                send_input::press(MouseButton::Middle);
+                self.click_middle_fired = true;
+            }
+        } else {
+            if self.click_middle_fired {
+                send_input::release(MouseButton::Middle);
+                self.click_middle_fired = false;
+            }
+            self.click_middle_ignored = false;
         }
 
         // ── scrolling ─────────────────────────────────────────────────────────
@@ -251,5 +286,9 @@ impl Dispatcher {
         self.scroll_down_fired = false;
         self.scroll_left_fired = false;
         self.scroll_right_fired = false;
+
+        self.click_left_ignored = false;
+        self.click_right_ignored = false;
+        self.click_middle_ignored = false;
     }
 }

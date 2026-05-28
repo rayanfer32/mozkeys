@@ -30,6 +30,7 @@ const MENU_RELOAD_ID: u32   = 1004;
 const MENU_OVERLAY_ID: u32  = 1005;
 const MENU_STARTUP_ID: u32  = 1006;
 const MENU_EXIT_ID: u32     = 1007;
+const MENU_RESET_ID: u32    = 1008;
 
 thread_local! {
     static TL_SM: std::cell::Cell<*const StateMachine> =
@@ -214,6 +215,14 @@ unsafe fn show_popup_menu(hwnd: HWND, state_machine: &StateMachine) {
         MENU_RELOAD_ID as usize,
         windows::core::w!("Reload Configuration")
     );
+
+    // Reset Settings
+    let _ = AppendMenuW(
+        hmenu,
+        MF_STRING,
+        MENU_RESET_ID as usize,
+        windows::core::w!("Reset to Default Settings")
+    );
     let _ = AppendMenuW(hmenu, MF_SEPARATOR, 0, windows::core::PCWSTR::null());
 
     // Toggle Cursor Indicator checkbox
@@ -298,6 +307,13 @@ unsafe extern "system" fn wnd_proc(
                     MENU_RELOAD_ID => {
                         let cfg = crate::core::config::load();
                         sm.reload_config(&cfg);
+                    }
+                    MENU_RESET_ID => {
+                        if let Ok(_) = crate::core::config::reset_to_default() {
+                            let cfg = crate::core::config::load();
+                            sm.reload_config(&cfg);
+                            eprintln!("[tray] configuration reset to defaults");
+                        }
                     }
                     MENU_OVERLAY_ID => {
                         let prev = sm.overlay_enabled.fetch_xor(true, Ordering::AcqRel);

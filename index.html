@@ -435,6 +435,32 @@
       gap: 1.2rem;
       text-align: left;
     }
+    .demo-tabs {
+      display: flex;
+      gap: 0.4rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.75rem;
+      margin-bottom: -0.25rem;
+    }
+    .demo-tab {
+      background: transparent;
+      border: none;
+      color: var(--ink-3);
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 0.35rem 0.7rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.12s ease;
+    }
+    .demo-tab:hover {
+      color: var(--ink);
+      background: var(--surface-3);
+    }
+    .demo-tab.active {
+      color: #fff;
+      background: var(--accent);
+    }
     .demo-screen {
       position: relative;
       height: 180px;
@@ -693,6 +719,11 @@
       <!-- Right: Animation Widget -->
       <div class="hero-visual">
         <div class="demo-widget">
+          <div class="demo-tabs">
+            <button class="demo-tab active" data-demo="activation">Activation</button>
+            <button class="demo-tab" data-demo="precision">Precision</button>
+            <button class="demo-tab" data-demo="clicks">Clicks</button>
+          </div>
           <!-- Screen Area -->
           <div class="demo-screen">
             <div class="demo-grid-bg"></div>
@@ -712,9 +743,9 @@
 
           <!-- Keyboard Area -->
           <div class="demo-keyboard">
-            <!-- Trigger Key (Left) -->
+            <!-- Precision Modifier (Left) -->
             <div class="kbd-col">
-              <div class="kbd-label">Trigger</div>
+              <div class="kbd-label">Precision</div>
               <div id="key-capslock" class="kbd-key capslock">CapsLock</div>
             </div>
             
@@ -785,8 +816,8 @@
     <div class="features-grid">
       <div class="feature-card">
         <span class="feature-icon">⌨️</span>
-        <h3>Double-tap CapsLock</h3>
-        <p>Enter and exit mouse mode with a quick double-tap of CapsLock. Clever reuse of a key you barely use anyway.</p>
+        <h3>RCtrl + RShift Toggle</h3>
+        <p>Enter and exit mouse mode by pressing Right Ctrl and Right Shift together. Completely transparent to other keys.</p>
       </div>
       <div class="feature-card">
         <span class="feature-icon">🖱️</span>
@@ -837,7 +868,7 @@
       <div class="diff-col">
         <h3>mozkeys</h3>
         <ul>
-          <li data-icon="✓">Double-tap CapsLock , a key already on every keyboard that you almost never use for caps.</li>
+          <li data-icon="✓">Press RCtrl + RShift together , a fast and natural key combination to enter or exit mouse mode.</li>
           <li data-icon="✓">Right Shift / Right Ctrl for clicks , left-hand modifiers remain fully functional.</li>
           <li data-icon="✓">240 Hz deterministic loop , movement is independent of OS key-repeat rate or focus.</li>
           <li data-icon="✓">Sub-pixel accumulation , smooth at all speeds, no pixel-skipping jitter.</li>
@@ -874,9 +905,9 @@
       </thead>
       <tbody>
         <tr>
-          <td><kbd>CapsLock</kbd> × 2</td>
+          <td><kbd>Right Ctrl</kbd> + <kbd>Right Shift</kbd></td>
           <td>Enter / exit mouse mode</td>
-          <td>Both taps within 250 ms</td>
+          <td>Press both simultaneously</td>
         </tr>
         <tr>
           <td><kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd></td>
@@ -976,7 +1007,7 @@
     <pre><span class="tok-comment"># mozkeys configuration</span>
 
 <span class="tok-section">[general]</span>
-<span class="tok-key">mouse_mode</span>    = <span class="tok-val">"capslock_doubletap"</span>   <span class="tok-comment"># capslock_doubletap | capslock_hold | right_alt</span>
+<span class="tok-key">mouse_mode</span>    = <span class="tok-val">"rctrl_rshift"</span>   <span class="tok-comment"># capslock_doubletap | capslock_hold | right_alt | rctrl_rshift</span>
 <span class="tok-key">double_tap_ms</span> = <span class="tok-num">250</span>                    <span class="tok-comment"># max gap between taps (ms)</span>
 <span class="tok-key">exit_key</span>      = <span class="tok-val">"escape"</span>
 
@@ -1033,8 +1064,8 @@
       </details>
 
       <details>
-        <summary>Why CapsLock? Won't that interfere with typing?</summary>
-        <p>CapsLock is one of the few keys that is almost never used intentionally yet occupies prime keyboard real estate. mozkeys intercepts CapsLock entirely in mouse mode and suppresses the caps-toggle side-effect. Outside of mouse mode, CapsLock still works as normal. The double-tap entry gesture is fast and natural , two quick taps to enter, one tap of Escape to exit.</p>
+        <summary>Why RCtrl + RShift? Won't that interfere with normal hotkeys?</summary>
+        <p>Right Ctrl and Right Shift are rarely used for standard shortcuts compared to their left-side counterparts. mozkeys only intercepts them when pressed together to toggle mouse mode, or when held for clicks and precision movement. Outside of mouse mode, they pass through normally to your applications.</p>
       </details>
 
       <details>
@@ -1072,7 +1103,7 @@
   <p>Built with Rust &nbsp;·&nbsp; Windows x64</p>
 </footer>
 
-<script>
+<script >
 document.addEventListener("DOMContentLoaded", () => {
   const capslock = document.getElementById("key-capslock");
   const keyUp = document.getElementById("key-up");
@@ -1117,94 +1148,167 @@ document.addEventListener("DOMContentLoaded", () => {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
-  async function runDemoLoop() {
-    while (true) {
-      resetAll();
-      await delay(1200);
+  let demoId = 0;
 
-      // 1. Double tap CapsLock to activate
-      capslock.classList.add("active");
-      await delay(150);
-      capslock.classList.remove("active");
-      await delay(100);
-      capslock.classList.add("active");
-      await delay(150);
-      capslock.classList.remove("active");
+  async function startDemo(name) {
+    demoId++;
+    const myId = demoId;
+    resetAll();
 
-      // Mode activates
-      status.innerHTML = `<span class="status-dot active"></span> Mouse Mode: ON`;
-      overlay.classList.add("active");
-      await delay(800);
+    if (name === "activation") {
+      while (myId === demoId) {
+        resetAll();
+        await delay(1000);
+        if (myId !== demoId) break;
 
-      // 2. Move right
-      keyRight.classList.add("active");
-      cursorX = 72;
-      setCursorPos(cursorX, cursorY);
-      await delay(600);
-      keyRight.classList.remove("active");
-      await delay(400);
+        // Press RCtrl + RShift together to activate
+        keyRshift.classList.add("active");
+        keyRctrl.classList.add("active");
+        await delay(400);
+        if (myId !== demoId) break;
+        keyRshift.classList.remove("active");
+        keyRctrl.classList.remove("active");
 
-      // 3. Left click (RShift)
-      keyRshift.classList.add("active");
-      const rect = cursor.getBoundingClientRect();
-      const screenRect = cursor.parentElement.getBoundingClientRect();
-      const rx = rect.left - screenRect.left + 4;
-      const ry = rect.top - screenRect.top + 2;
-      ripple.style.left = `${rx}px`;
-      ripple.style.top = `${ry}px`;
-      ripple.classList.remove("animate-left", "animate-right");
-      void ripple.offsetWidth;
-      ripple.classList.add("animate-left");
-      await delay(200);
-      keyRshift.classList.remove("active");
-      await delay(800);
+        // Mode activates
+        status.innerHTML = `<span class="status-dot active"></span> Mouse Mode: ON`;
+        overlay.classList.add("active");
+        await delay(1800);
+        if (myId !== demoId) break;
 
-      // 4. Move down
-      keyDown.classList.add("active");
-      cursorY = 70;
-      setCursorPos(cursorX, cursorY);
-      await delay(600);
-      keyDown.classList.remove("active");
-      await delay(400);
+        // Press RCtrl + RShift together to deactivate
+        keyRshift.classList.add("active");
+        keyRctrl.classList.add("active");
+        await delay(400);
+        if (myId !== demoId) break;
+        keyRshift.classList.remove("active");
+        keyRctrl.classList.remove("active");
 
-      // 5. Right click (RCtrl)
-      keyRctrl.classList.add("active");
-      const rect2 = cursor.getBoundingClientRect();
-      const rx2 = rect2.left - screenRect.left + 4;
-      const ry2 = rect2.top - screenRect.top + 2;
-      ripple.style.left = `${rx2}px`;
-      ripple.style.top = `${ry2}px`;
-      ripple.classList.remove("animate-left", "animate-right");
-      void ripple.offsetWidth;
-      ripple.classList.add("animate-right");
+        overlay.classList.remove("active");
+        status.innerHTML = `<span class="status-dot"></span> Mouse Mode: OFF`;
+        await delay(1800);
+      }
+    } else if (name === "precision") {
+      while (myId === demoId) {
+        resetAll();
+        // Mouse Mode is active for this demo
+        status.innerHTML = `<span class="status-dot active"></span> Mouse Mode: ON`;
+        overlay.classList.add("active");
+        await delay(800);
+        if (myId !== demoId) break;
 
-      menu.style.left = `${rx2 + 8}px`;
-      menu.style.top = `${ry2 + 8}px`;
-      menu.classList.add("active");
+        // Move fast (normal)
+        keyRight.classList.add("active");
+        cursorX = 72;
+        setCursorPos(cursorX, cursorY);
+        await delay(600);
+        if (myId !== demoId) break;
+        keyRight.classList.remove("active");
+        await delay(600);
+        if (myId !== demoId) break;
 
-      await delay(250);
-      keyRctrl.classList.remove("active");
-      await delay(1500);
+        // Activate precision mode (hold CapsLock)
+        keyRshift.classList.add("active");
+        await delay(400);
+        if (myId !== demoId) break;
 
-      menu.classList.remove("active");
-      await delay(400);
+        // Move slow (precision)
+        keyRight.classList.add("active");
 
-      // 6. Double-tap CapsLock to deactivate
-      capslock.classList.add("active");
-      await delay(150);
-      capslock.classList.remove("active");
-      await delay(100);
-      capslock.classList.add("active");
-      await delay(150);
-      capslock.classList.remove("active");
+        cursorX = 77;
+        setCursorPos(cursorX, cursorY);
+        await delay(1000);
+        if (myId !== demoId) break;
+        keyRight.classList.remove("active");
+         keyRshift.classList.remove("active");
+        await delay(1800);
+      }
+    } else if (name === "clicks") {
+      while (myId === demoId) {
+        resetAll();
+        status.innerHTML = `<span class="status-dot active"></span> Mouse Mode: ON`;
+        overlay.classList.add("active");
+        await delay(800);
+        if (myId !== demoId) break;
 
-      overlay.classList.remove("active");
-      status.innerHTML = `<span class="status-dot"></span> Mouse Mode: OFF`;
-      await delay(2000);
+        // Move left slightly
+        keyLeft.classList.add("active");
+        cursorX = 35;
+        setCursorPos(cursorX, cursorY);
+        await delay(500);
+        if (myId !== demoId) break;
+        keyLeft.classList.remove("active");
+        await delay(400);
+        if (myId !== demoId) break;
+
+        // Left Click (RShift)
+        keyRshift.classList.add("active");
+        const rect = cursor.getBoundingClientRect();
+        const screenRect = cursor.parentElement.getBoundingClientRect();
+        const rx = rect.left - screenRect.left + 4;
+        const ry = rect.top - screenRect.top + 2;
+        ripple.style.left = `${rx}px`;
+        ripple.style.top = `${ry}px`;
+        ripple.classList.remove("animate-left", "animate-right");
+        void ripple.offsetWidth;
+        ripple.classList.add("animate-left");
+        await delay(200);
+        if (myId !== demoId) break;
+        keyRshift.classList.remove("active");
+        await delay(800);
+        if (myId !== demoId) break;
+
+        // Move down/right
+        keyRight.classList.add("active");
+        keyDown.classList.add("active");
+        cursorX = 60;
+        cursorY = 65;
+        setCursorPos(cursorX, cursorY);
+        await delay(600);
+        if (myId !== demoId) break;
+        keyRight.classList.remove("active");
+        keyDown.classList.remove("active");
+        await delay(400);
+        if (myId !== demoId) break;
+
+        // Right Click (RCtrl)
+        keyRctrl.classList.add("active");
+        const rect2 = cursor.getBoundingClientRect();
+        const rx2 = rect2.left - screenRect.left + 4;
+        const ry2 = rect2.top - screenRect.top + 2;
+        ripple.style.left = `${rx2}px`;
+        ripple.style.top = `${ry2}px`;
+        ripple.classList.remove("animate-left", "animate-right");
+        void ripple.offsetWidth;
+        ripple.classList.add("animate-right");
+
+        menu.style.left = `${rx2 + 8}px`;
+        menu.style.top = `${ry2 + 8}px`;
+        menu.classList.add("active");
+
+        await delay(250);
+        if (myId !== demoId) break;
+        keyRctrl.classList.remove("active");
+        await delay(1800);
+        if (myId !== demoId) break;
+        menu.classList.remove("active");
+        await delay(1200);
+      }
     }
   }
 
-  runDemoLoop();
+  // Setup tab click event listeners
+  const tabs = document.querySelectorAll(".demo-tab");
+  tabs.forEach(tab => {
+    tab.addEventListener("click", () => {
+      tabs.forEach(t => t.classList.remove("active"));
+      tab.classList.add("active");
+      const demoName = tab.getAttribute("data-demo");
+      startDemo(demoName);
+    });
+  });
+
+  // Start with the default activation demo
+  startDemo("activation");
 });
 </script>
 
